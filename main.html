@@ -1,0 +1,235 @@
+Using Google Cloud SQL
+
+Python |Java |PHP |Go
+Stack Overflow Questions
+Java Google App Engine and Google Cloud SQL running on local dev server
+Local MySQLdb connection fails with AttributeError for paramstyle when running GAE development server
+GAE DataStore vs Google Cloud SQL for Enterprise Managment Systems
+Can SQLAlchemy be used with Google Cloud SQL?
+How do I set a root password for a Cloud SQL instance in Google App Engine? ["Instance busy" error message]
+See more...
+This document describes how to use Google Cloud SQL instances with the App Engine Python SDK.
+
+Creating a Cloud SQL instance
+Build a starter application and database
+Connect to your database
+Using a local MySQL instance during development
+Size and access limits
+Complete MySQLdb Python example
+To learn more about Google Cloud SQL, see the Google Cloud SQL documentation.
+
+If you haven't already created a Google Cloud SQL instance, the first thing you need to do is create one.
+
+Creating a Cloud SQL Instance
+
+A Cloud SQL instance is equivalent to a server. A single Cloud SQL instance can contain multiple databases. Follow these steps to create a Google Cloud SQL instance:
+
+Sign into the Google Developers Console.
+Create a new project, or open an existing project.
+From within a project, select Cloud SQL to open the Cloud SQL control panel for that project.
+Click New Instance to create a new Cloud SQL instance in your project, and configure your size, billing and replication options.
+More information on Cloud SQL billing options and instance sizes
+More information on Cloud SQL replication options
+You'll notice that the App Engine application associated with your current project is already authorized to access this new instance. For more information on app authorization see the Access Control topic in the Cloud SQL docs.
+That's it! You can now connect to your Google Cloud SQL instance from within your app, or any of these other methods.
+
+MySQL case sensitivity
+
+When you are creating or using databases and tables, keep in mind that all identifiers in Google Cloud SQL are case-sensitive. This means that all tables and databases are stored with the same name and case that was specified at creation time. When you try to access your databases and tables, make sure that you are using the exact database or table name.
+
+For example, if you create a database named PersonsDatabase, you will not be able to reference the database using any other variation of that name, such as personsDatabase or personsdatabase. For more information about identifier case sensitivity, see the MySQL documentation.
+
+Build a starter application and database
+
+The easiest way to build an App Engine application that accesses Google Cloud SQL is to create a starter application then modify it. This section leads you through the steps of building an application that displays a web form that lets users read and write entries to a guestbook database. The sample application demonstrates how to read and write to a Google Cloud SQL instance.
+
+Step 1: Create your App Engine sample application
+
+Follow the instructions for the Hello World! chapter of the Python Getting Started guide to create a simple App Engine application.
+
+Step 2: Grant your App Engine application access to the Google Cloud SQL instance
+
+You can grant individual Google App Engine applications access to a Google Cloud SQL instance. One application can be granted access to multiple instances, and multiple applications can be granted access to a particular instance. To grant access to a Google App Engine application, you need its application ID which can be found at the Google App Engine administration console under the Applications column.
+
+Note: An App Engine application must be in the same region (either EU or US) as a Google Cloud SQL instance to be authorized to access that Google Cloud SQL instance.
+
+To grant an App Engine application access to a Google Cloud SQL instance:
+
+Go to the Google Developers Console.
+Select a project by clicking the project name.
+In the left sidebar of your project, click Cloud SQL.
+Click the name of the instance to which you want to grant access.
+In the instance dashboard, click Edit.
+In the Instance settings window, enter your Google App Engine application ID in the Authorized App Engine applications section. You can grant access to multiple applications, by entering them one at a time.
+Note: In order to improve performance, the Google Cloud SQL instance will be kept as close as possible to the first App Engine application on the list, so this should be the application whose performance is most important.
+Click Confirm to apply your changes.
+After you have added authorized applications to your Google Cloud SQL instance, you can view a list of these applications in the instance dashboard, in the section titled Applications.
+
+Step 3: Create your database and table
+
+For example, you can use MySQL Client to run the following commands:
+
+Create a new database called guestbook using the following SQL statement:
+
+CREATE DATABASE guestbook;
+Inside the guestbook database create a table called entries with columns for the guest name, the message content, and a random ID, using the following statement:
+
+CREATE TABLE guestbook.entries (
+  entryID INT NOT NULL AUTO_INCREMENT,
+  guestName VARCHAR(255),
+  content VARCHAR(255),
+  PRIMARY KEY(entryID)
+);
+After you have set up a bare-bones application, you can modify it and deploy it.
+
+Connect to your database
+
+Import the MySQLdb module
+Connect, post, and get from your database
+Update your configuration file
+Import the MySQLdb module
+
+Google Cloud SQL supports connections using the MySQLdb module, which is the de facto way to connect to MySQL in Python. MySQLdb implements PEP 249 (the same as implemented by the custom Google driver, google.appengine.api.rdbms) and also provides access to the _mysql module which implements the MySQL C API. For more information, see the MySQLdb User's Guide. We recommend that you use the MySQLdb module whenever possible.
+
+Before you can write any Python applications with Google Cloud SQL, you need to import the MySQLdb module by adding import MySQLdb to your source code.
+
+Note: You must have the MySQL-python package installed on your system. On an Debian based system you can install this module using sudo apt-get install python-mysqldb command. Windows and MacOS users can follow the instructions in here.
+Copy and paste the following code into your helloworld.py file.
+
+import cgi
+import webapp2
+from google.appengine.ext.webapp.util import run_wsgi_app
+
+import MySQLdb
+import os
+import jinja2
+The webapp2 module provides an application framework to simplify development, the run_wsgi_app and cgi modules provide Common Gateway Interface (CGI) support, the jinja2 module provides HTML templating, and the os module provides access to environment variables.
+
+Connect, post, and get from your database
+
+In this section, we show you how to continue to modify your helloworld.py file to connect, post, and get data from your Cloud SQL database. In the code, replace your-instance-name with your Google Cloud SQL instance name and your-project-id with the literal project ID.
+
+This code performs the following actions:
+
+The MainPage class:
+connects to the guestbook database and querying it for all rows in the entries table
+prints all the rows in an HTML table
+provides a web form for users to POST to the guestbook
+The Guestbook class:
+grabs the values of the form fields from MainPage
+connects to the guestbook database and inserting the form values
+redirects the user to back to the MainPage
+You access a Cloud SQL instance by using a Unix socket with the prefix /cloudsql/. The code below can be used to run in both production and on dev_appserver (using a local MySQL server).
+
+import cgi
+import webapp2
+from google.appengine.ext.webapp.util import run_wsgi_app
+
+import MySQLdb
+import os
+import jinja2
+
+# Configure the Jinja2 environment.
+JINJA_ENVIRONMENT = jinja2.Environment(
+  loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+  autoescape=True,
+  extensions=['jinja2.ext.autoescape'])
+
+# Define your production Cloud SQL instance information.
+_INSTANCE_NAME = 'your-project-id:your-instance-name'
+
+class MainPage(webapp2.RequestHandler):
+    def get(self):
+        # Display existing guestbook entries and a form to add new entries.
+        if (os.getenv('SERVER_SOFTWARE') and
+            os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')):
+            db = MySQLdb.connect(unix_socket='/cloudsql/' + _INSTANCE_NAME, db='guestbook', user='root', charset='utf 8')
+        else:
+            db = MySQLdb.connect(host='127.0.0.1', port=3306, db='guestbook', user='root', charset='utf 8')
+            # Alternatively, connect to a Google Cloud SQL instance using:
+            # db = MySQLdb.connect(host='ip-address-of-google-cloud-sql-instance', port=3306, user='root', charset='utf 8')
+
+        cursor = db.cursor()
+        cursor.execute('SELECT guestName, content, entryID FROM entries')
+
+        # Create a list of guestbook entries to render with the HTML.
+        guestlist = [];
+        for row in cursor.fetchall():
+          guestlist.append(dict([('name',cgi.escape(row[0])),
+                                 ('message',cgi.escape(row[1])),
+                                 ('ID',row[2])
+                                 ]))
+
+        variables = {'guestlist': guestlist}
+        template = JINJA_ENVIRONMENT.get_template('main.html')
+        self.response.write(template.render(variables))
+        db.close()
+
+class Guestbook(webapp2.RequestHandler):
+    def post(self):
+        # Handle the post to create a new guestbook entry.
+        fname = self.request.get('fname')
+        content = self.request.get('content')
+
+        if (os.getenv('SERVER_SOFTWARE') and
+            os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')):
+            db = MySQLdb.connect(unix_socket='/cloudsql/' + _INSTANCE_NAME, db='guestbook', user='root', charset='utf 8')
+        else:
+            db = MySQLdb.connect(host='127.0.0.1', port=3306, db='guestbook', user='root', charset='utf 8')
+            # Alternatively, connect to a Google Cloud SQL instance using:
+            # db = MySQLdb.connect(host='ip-address-of-google-cloud-sql-instance', port=3306, db='guestbook', user='root', charset='utf 8')
+
+        cursor = db.cursor()
+        # Note that the only format string supported is %s
+        cursor.execute('INSERT INTO entries (guestName, content) VALUES (%s, %s)', (fname, content))
+        db.commit()
+        db.close()
+
+        self.redirect("/")
+
+application = webapp2.WSGIApplication([('/', MainPage),
+                               ('/sign', Guestbook)],
+                              debug=True)
+
+def main():
+    application = webapp2.WSGIApplication([('/', MainPage),
+                                           ('/sign', Guestbook)],
+                                          debug=True)
+    run_wsgi_app(application)
+
+if __name__ == "__main__":
+    main()
+The following HTML file (main.html) is referenced in the MainPage class. It uses the JinJa2 templating system to keep the HTML and code separate.
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My Guestbook!</title>
+  </head>
+  <body>
+    <body>
+      <table style="border: 1px solid black">
+        <tbody>
+          <tr>
+            <th width="35%" style="background-color: #CCFFCC; margin: 5px">Name</th>
+            <th style="background-color: #CCFFCC; margin: 5px">Message</th>
+            <th style="background-color: #CCFFCC; margin: 5px">ID</th>
+          </tr>
+          {% for guest in guestlist %}
+             <tr>
+               <td>{{ guest['name'] }}</td>
+               <td>{{ guest['message'] }}</td>
+               <td>{{ guest['ID'] }}</td>
+             </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <br /> No more messages!
+      <br /><strong>Sign the guestbook!</strong>
+      <form action="/sign" method="post">
+        <div>First Name: <input type="text" name="fname" style="border: 1px solid black"></div>
+        <div>Message: <br /><textarea name="content" rows="3" cols="60"></textarea></div>
+        <div><input type="submit" value="Sign Guestbook"></div>
+      </form>
+  </body>
+</html>
