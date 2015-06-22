@@ -5,6 +5,7 @@ import logging
 import utils
 import json
 import MySQLdb
+import sql as SQL
 import os
 import jinja2
 
@@ -31,15 +32,10 @@ class Dish(webapp2.RequestHandler):
         if err:
             self.response.out.write(err.message())
             return
-        placeholders = ', '.join(['%s'] * len(req_params))
-        columns = ', '.join(req_params.keys())
-        sql = "INSERT INTO %s ( %s ) VALUES ( %s )" % ("dish", columns, placeholders)
-        test = (sql, req_params.values())
-        logging.info(test)
         cursor = db.cursor()
-        # Note that the only format string supported is %s
         try:
-            cursor.execute(sql, req_params.values())
+            query = SQL.get_insert_query_string("dish", req_params)
+            cursor.execute(query)
             db.commit()
         except MySQLdb.Error, e:
             try:
