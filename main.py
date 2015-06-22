@@ -27,6 +27,13 @@ class MainPage(webapp2.RequestHandler):
         logging.info(json.dumps(req_params))
 
 class Dish(webapp2.RequestHandler):
+    def get(self):
+        err, req_params = utils.validate_data(self.request)
+        if err:
+            self.response.out.write(err.message())
+            return
+        self.response.out.write(req_params)
+
     def post(self):
         err, req_params = utils.validate_data(self.request)
         if err:
