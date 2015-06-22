@@ -6,6 +6,7 @@ import utils
 import json
 import MySQLdb
 import sql as SQL
+import urlparse
 import os
 import jinja2
 
@@ -35,22 +36,48 @@ class Dish(webapp2.RequestHandler):
         self.response.out.write(req_params)
 
     def post(self):
-        err, req_params = utils.validate_data(self.request)
-        if err:
-            self.response.out.write(err.message())
-            return
-        cursor = db.cursor()
-        try:
-            query = SQL.get_insert_query_string("dish", req_params)
-            cursor.execute(query)
-            db.commit()
-        except MySQLdb.Error, e:
-            try:
-                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
-            except IndexError:
-                logging.error("MySQL Error: %s" % str(e))
+        url_string = str(self.request.url)
+        url_obj =urlparse.urlparse(url_string)
+        # str.split returns a list of strings. Google search python str.split for more detail.
+        subdirs = str(url_obj.path).split('/')
+        # Last element in the url
+        last_dir_string = str(subdirs[len(subdirs)-1])
 
-        self.response.out.write(json.dumps(req_params))
+        if last_dir_string == "dish":
+
+            err, req_params = utils.validate_data(self.request)
+            if err:
+                self.response.out.write(err.message())
+                return
+            cursor = db.cursor()
+            try:
+                query = SQL.get_insert_query_string("dish", req_params)
+                cursor.execute(query)
+                db.commit()
+            except MySQLdb.Error, e:
+                try:
+                    logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+                except IndexError:
+                    logging.error("MySQL Error: %s" % str(e))
+
+            self.response.out.write(json.dumps(req_params))
+            return
+
+    def put(self):
+        url_string = str(self.request.url)
+        url_obj = urlparse.urlparse(url_string)
+        # str.split returns a list of strings. Google search python str.split for more detail.
+        subdirs = str(url_obj.path).split('/')
+        # Last element in the url
+        action = str(subdirs[len(subdirs)-2])
+        dish_id = str(subdirs[len(subdirs)-1])
+        # TO-DO: Add error checking and handling
+
+        if action == "unlike":
+        elif action == "like":
+        elif action == "taste":
+        elif action == "untaste":
+
 
 application = webapp2.WSGIApplication([('/', MainPage),
                                ('/dish', Dish)],
