@@ -6,9 +6,9 @@ import sql as fiidup_sql
 import urlparse
 import json
 from Comment import Comment as commentHandler
-from Like import Like as LikeHandler
-from Tasted import Tasted as TastedHandler
-from Keep import Keep as KeepHandler
+from Like import Like as likeHandler
+from Tasted import Tasted as tastedHandler
+from Keep import Keep as keepHandler
 
 put_sub_routes = {"PUT_comment": "put_comment",
                   "PUT_like": "put_like",
