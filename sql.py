@@ -1,5 +1,11 @@
 import errors
 import logging
+import MySQLdb
+
+_INSTANCE_NAME = 'fiidup-sql:fiidup-db'
+db = MySQLdb.connect(host='173.194.107.106', port=3306, db='fiidup_main', user='all')
+##db = MySQLdb.connect(unix_socket='/cloudsql/' + _INSTANCE_NAME, db='fiidup_main', user='root', charset='utf 8')
+
 
 def get_insert_query_string(table, params):
     logging.info(params)
@@ -9,7 +15,7 @@ def get_insert_query_string(table, params):
         query = query + key + ", "
         values.append(params[key])
     query = query[:-2]
-    query = query + ") VALUES ("
+    query += ") VALUES ("
     for x in values:
         try:
             int(x)
