@@ -25,6 +25,7 @@ post_sub_routes = {"POST_comment": "post_comment",
                    "POST_tasted": "post_tasted",
                    "POST_keep": "post_keep"}
 
+
 class Dish(webapp2.RequestHandler):
     def get(self):
         err, req_params = utils.validate_data(self.request)
@@ -98,7 +99,6 @@ class Dish(webapp2.RequestHandler):
                 return
         else:
             self.response.out.write("Invalid URL")
-
 
     def put(self):
         err, req_params = utils.validate_data(self.request)
