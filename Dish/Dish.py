@@ -5,7 +5,7 @@ import MySQLdb
 import sql as fiidup_sql
 import urlparse
 import json
-from Comment import Comment as CommentHandler
+from Comment import Comment as commentHandler
 from Like import Like as LikeHandler
 from Tasted import Tasted as TastedHandler
 from Keep import Keep as KeepHandler
@@ -51,7 +51,7 @@ class Dish(webapp2.RequestHandler):
                 try:
                     subdir_string = str(subdirs[2])
                     handling_function = get_sub_routes["GET_" + subdir_string]
-                    getattr(CommentHandler, handling_function)(self)
+                    getattr(globals()[subdir_string + "Handler"], handling_function)(self)
                     return
                 except KeyError:
                     self.response.out.write("Invalid URL")
@@ -91,7 +91,7 @@ class Dish(webapp2.RequestHandler):
             try:
                 subdir_string = str(subdirs[2])
                 handling_function = post_sub_routes["POST_" + subdir_string]
-                getattr(CommentHandler, handling_function)(self)
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self)
                 return
             except KeyError:
                 self.response.out.write("Invalid URL")
@@ -101,11 +101,35 @@ class Dish(webapp2.RequestHandler):
 
 
     def put(self):
+        err, req_params = utils.validate_data(self.request)
+        if err:
+            self.response.out.write(err.message())
+            return
+
         url_string = str(self.request.url)
         url_obj = urlparse.urlparse(url_string)
         # str.split returns a list of strings. Google search python str.split for more detail.
         subdirs = str(url_obj.path).split('/')
         # Last element in the url
-        action = str(subdirs[len(subdirs)-2])
-        dish_id = str(subdirs[len(subdirs)-1])
-        # TO-DO: Add error checking and handling
+        last_dir_string = str(subdirs[len(subdirs)-1])
+        num_layers = len(subdirs)
+
+        try:
+            int(last_dir_string)
+        except ValueError:
+            self.response.out.write("Invalid URL")
+            return
+
+        if num_layers == 3:
+            self.response.out.write("Modify Data")
+            return
+        elif num_layers == 4:
+            try:
+                subdir_string = str(subdirs[2])
+                handling_function = put_sub_routes["PUT_" + subdir_string]
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self)
+                return
+            except KeyError:
+                self.response.out.write("Invalid URL")
+                return
+        self.response.out.write("Invalid URL")
