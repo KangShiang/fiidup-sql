@@ -20,10 +20,7 @@ get_sub_routes = {"GET_comment": "get_comment",
                   "GET_tasted": "get_tasted",
                   "GET_keep": "get_keep"}
 
-post_sub_routes = {"POST_comment": "post_comment",
-                   "POST_like": "post_like",
-                   "POST_tasted": "post_tasted",
-                   "POST_keep": "post_keep"}
+post_sub_routes = {}
 
 
 class Dish(webapp2.RequestHandler):
@@ -52,12 +49,23 @@ class Dish(webapp2.RequestHandler):
                 try:
                     subdir_string = str(subdirs[2])
                     handling_function = get_sub_routes["GET_" + subdir_string]
-                    getattr(globals()[subdir_string + "Handler"], handling_function)(self)
+                    getattr(globals()[subdir_string + "Handler"], handling_function)(self, None)
                     return
                 except KeyError:
-                    self.response.out.write("Invalid URL")
+                    self.response.status = 405
                     return
-        self.response.out.write("Invalid URL")
+        elif num_layers == 4:
+            try:
+                # Handle the case when the url is /dish/:id
+                int(last_dir_string)
+                subdir_string = str(subdirs[2])
+                handling_function = get_sub_routes["GET_" + subdir_string]
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string)
+                # Return info of a specific dish
+            except KeyError:
+                self.response.status = 405
+                return
+        self.response.status = 405
 
     def post(self):
         err, req_params = utils.validate_data(self.request)
@@ -92,13 +100,13 @@ class Dish(webapp2.RequestHandler):
             try:
                 subdir_string = str(subdirs[2])
                 handling_function = post_sub_routes["POST_" + subdir_string]
-                getattr(globals()[subdir_string + "Handler"], handling_function)(self)
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self , None)
                 return
             except KeyError:
-                self.response.out.write("Invalid URL")
+                self.response.status = 405
                 return
         else:
-            self.response.out.write("Invalid URL")
+            self.response.status = 405
 
     def put(self):
         err, req_params = utils.validate_data(self.request)
@@ -117,7 +125,7 @@ class Dish(webapp2.RequestHandler):
         try:
             int(last_dir_string)
         except ValueError:
-            self.response.out.write("Invalid URL")
+            self.response.status = 405
             return
 
         if num_layers == 3:
@@ -127,9 +135,9 @@ class Dish(webapp2.RequestHandler):
             try:
                 subdir_string = str(subdirs[2])
                 handling_function = put_sub_routes["PUT_" + subdir_string]
-                getattr(globals()[subdir_string + "Handler"], handling_function)(self)
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string)
                 return
             except KeyError:
-                self.response.out.write("Invalid URL")
+                self.response.status = 405
                 return
-        self.response.out.write("Invalid URL")
+        self.response.status = 405
