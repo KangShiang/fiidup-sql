@@ -22,7 +22,10 @@ get_sub_routes = {"GET_like": "get_like",
                   "GET_review": "get_review",
                   "GET_keep": "get_keep"}
 
-post_sub_routes = {}
+post_sub_routes = {"POST_like": "post_like",
+                   "POST_visited": "post_visited",
+                   "POST_review": "post_review",
+                   "POST_keep": "post_keep"}
 
 class Restaurant(webapp2.RequestHandler):
     def get(self):

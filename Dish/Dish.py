@@ -21,7 +21,10 @@ get_sub_routes = {"GET_comment": "get_comment",
                   "GET_tasted": "get_tasted",
                   "GET_keep": "get_keep"}
 
-post_sub_routes = {}
+post_sub_routes = {"POST_comment": "post_comment",
+                   "POST_like": "post_like",
+                   "POST_tasted": "post_tasted",
+                   "POST_keep": "post_keep"}
 
 
 class Dish(webapp2.RequestHandler):
