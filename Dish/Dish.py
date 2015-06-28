@@ -129,7 +129,7 @@ class Dish(webapp2.RequestHandler):
             return
 
         if num_layers == 3:
-            self.response.out.write("Modify Data")
+            dishHandler.put_dish(self, last_dir_string, req_params)
             return
         elif num_layers == 4:
             try:
