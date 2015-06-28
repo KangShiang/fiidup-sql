@@ -46,7 +46,7 @@ class Restaurant(webapp2.RequestHandler):
                 try:
                     subdir_string = str(subdirs[2])
                     handling_function = get_sub_routes["GET_" + subdir_string]
-                    getattr(globals()[subdir_string + "Handler"], handling_function)(self, None)
+                    getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
                     return
                 except KeyError:
                     self.response.status = 405
@@ -57,7 +57,7 @@ class Restaurant(webapp2.RequestHandler):
                 int(last_dir_string)
                 subdir_string = str(subdirs[2])
                 handling_function = get_sub_routes["GET_" + subdir_string]
-                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string)
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
                 # Return info of a specific dish
             except KeyError:
                 self.response.status = 405
@@ -97,7 +97,7 @@ class Restaurant(webapp2.RequestHandler):
             try:
                 subdir_string = str(subdirs[2])
                 handling_function = post_sub_routes["POST_" + subdir_string]
-                getattr(globals()[subdir_string + "Handler"], handling_function)(self , None)
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self , None, req_params)
                 return
             except KeyError:
                 self.response.status = 405
@@ -132,7 +132,7 @@ class Restaurant(webapp2.RequestHandler):
             try:
                 subdir_string = str(subdirs[2])
                 handling_function = put_sub_routes["PUT_" + subdir_string]
-                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string)
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
                 return
             except KeyError:
                 self.response.status = 405
