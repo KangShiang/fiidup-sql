@@ -7,7 +7,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 import utils
 
 from Dish import Dish as DishHandler
-
+from Restaurant import Restaurant as RestaurantHandler
 # Define your production Cloud SQL instance information.
 
 class MainPage(webapp2.RequestHandler):
@@ -22,7 +22,9 @@ class MainPage(webapp2.RequestHandler):
         logging.info(json.dumps(req_params))
 
 application = webapp2.WSGIApplication([('/', MainPage),
-                               ('/dish.*', DishHandler.Dish)],
+                               ('/dish.*', DishHandler.Dish),
+                               ('/restaurant.*', RestaurantHandler.Restaurant)],
+
                               debug=True)
 
 def main():
