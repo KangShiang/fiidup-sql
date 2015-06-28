@@ -5,6 +5,8 @@ import MySQLdb
 import sql as fiidup_sql
 import urlparse
 import json
+import restaurantHandler
+
 from Like import Like as likeHandler
 from Visited import Visited as visitedHandler
 from Keep import Keep as keepHandler
@@ -35,7 +37,7 @@ class Restaurant(webapp2.RequestHandler):
         last_dir_string = str(subdirs[len(subdirs)-1])
         num_layers = len(subdirs)
         if num_layers == 2:
-            self.response.out.write("Retrieve Data")
+            restaurantHandler.get_restaurant(self, None, req_params)
             return
         elif num_layers == 3:
             try:

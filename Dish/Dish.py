@@ -5,6 +5,7 @@ import MySQLdb
 import sql as fiidup_sql
 import urlparse
 import json
+import dishHandler
 from Comment import Comment as commentHandler
 from Like import Like as likeHandler
 from Tasted import Tasted as tastedHandler
@@ -38,13 +39,12 @@ class Dish(webapp2.RequestHandler):
         last_dir_string = str(subdirs[len(subdirs)-1])
         num_layers = len(subdirs)
         if num_layers == 2:
-            self.response.out.write("Retrieve Data")
-            return
+            dishHandler.get_dish(self, None, req_params)
         elif num_layers == 3:
             try:
                 # Handle the case when the url is /dish/:id
                 int(last_dir_string)
-                self.response.out.write("Retrieve Data for dish id =" + last_dir_string)
+                dishHandler.get_dish(self, last_dir_string, req_params)
             except ValueError:
                 try:
                     subdir_string = str(subdirs[2])
