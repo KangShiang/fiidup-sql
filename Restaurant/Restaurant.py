@@ -14,12 +14,12 @@ from Keep import Keep as keepHandler
 
 put_sub_routes = {"PUT_like": "put_like",
                   "PUT_visited": "put_visited",
-                  "PUT_Review": "put_review",
+                  "PUT_review": "put_review",
                   "PUT_keep": "put_keep"}
 
 get_sub_routes = {"GET_like": "get_like",
                   "GET_visited": "get_visited",
-                  "GET_Review": "get_review",
+                  "GET_review": "get_review",
                   "GET_keep": "get_keep"}
 
 post_sub_routes = {}
