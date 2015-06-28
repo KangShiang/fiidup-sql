@@ -24,7 +24,6 @@ get_sub_routes = {"GET_like": "get_like",
 
 post_sub_routes = {}
 
-
 class Restaurant(webapp2.RequestHandler):
     def get(self):
         err, req_params = utils.validate_data(self.request)
@@ -67,7 +66,8 @@ class Restaurant(webapp2.RequestHandler):
             except KeyError:
                 self.response.status = 405
                 return
-        self.response.status = 405
+        else:
+            self.response.status = 405
 
     def post(self):
         err, req_params = utils.validate_data(self.request)
