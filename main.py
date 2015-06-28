@@ -8,6 +8,9 @@ import utils
 
 from Dish import Dish as DishHandler
 from Restaurant import Restaurant as RestaurantHandler
+from User import User as UserHandler
+from Session import Session as SessionHandler
+from BlobsDown import BlobsDown as BlobsDownHandler
 # Define your production Cloud SQL instance information.
 
 class MainPage(webapp2.RequestHandler):
@@ -23,8 +26,10 @@ class MainPage(webapp2.RequestHandler):
 
 application = webapp2.WSGIApplication([('/', MainPage),
                                ('/dish.*', DishHandler.Dish),
-                               ('/restaurant.*', RestaurantHandler.Restaurant)],
-
+                               ('/restaurant.*', RestaurantHandler.Restaurant),
+                               ('/user.*', UserHandler.User),
+                               ('/session.*'. SessionHandler.Session),
+                               ('/blob/serve/([^/]+)?.*', BlobsDownHandler.BlobsDown)],
                               debug=True)
 
 def main():
