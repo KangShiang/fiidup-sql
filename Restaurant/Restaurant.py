@@ -6,7 +6,7 @@ import sql as fiidup_sql
 import urlparse
 import json
 from Like import Like as likeHandler
-from Visited import Visited as tastedHandler
+from Visited import Visited as visitedHandler
 from Keep import Keep as keepHandler
 
 put_sub_routes = {"PUT_like": "put_like",
