@@ -46,7 +46,7 @@ class Restaurant(webapp2.RequestHandler):
             try:
                 # Handle the case when the url is /dish/:id
                 int(last_dir_string)
-                # Return info of a specific dish
+                restaurantHandler.get_restaurant(self, last_dir_string, req_params)
             except ValueError:
                 try:
                     subdir_string = str(subdirs[2])
@@ -131,7 +131,7 @@ class Restaurant(webapp2.RequestHandler):
             return
 
         if num_layers == 3:
-            self.response.out.write("Modify Data")
+            restaurantHandler.get_restaurant(self, last_dir_string, req_params)
             return
         elif num_layers == 4:
             try:
