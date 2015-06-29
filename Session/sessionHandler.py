@@ -1,19 +1,31 @@
+import utils
+import json
 import webapp2
 
-def delete_session(handler, id, params):
-    if id:
-        handler.response.out.write("Delete session " + "when id = " + id + " and Param =" + str(params))
-    else:
-        handler.response.out.write("Delete session" + " and Param =" + str(params))
+def delete_session(handler, params):
+    # TODO: Need to be checked
+    handler.response.set_cookie(handler.app.config.get('cookie_name'),
+                                str(utils.encrypt(temp_user.id)), max_age=-1,
+                                path=handler.app.config.get('cookie_path'),
+                                domain=handler.app.config.get('cookie_domain'),
+                                secure=handler.app.config.get('secure_cookie'))
 
-def get_session(handler, id, params):
-    if id:
-        handler.response.out.write("Get to session " + "when id = " + id + " and Param =" + str(params))
+def get_session(handler, params):
+    temp_user = utils.process_cookie(handler.request)
+    if temp_user:
+        handler.response.headers['Content-Type'] = 'application/json'
+        dictionary = {
+                'head':{
+                    'id': temp_user.id,
+                    'type': 'session',
+                    'username':temp_user.username,
+                },
+                'data' : utils.dictionarize(temp_user),
+                'error':None
+        }
+        handler.response.write(json.dumps(dictionary))
     else:
-        handler.response.out.write("Get to session" + " and Param =" + str(params))
+        handler.response.write('Cookie Not Found')
 
-def post_session(handler, id, params):
-    if id:
-        handler.response.out.write("Post to session " + "when id = " + id + " and Param =" + str(params))
-    else:
-        handler.response.out.write("Post to session" + " and Param =" + str(params))
+def post_session(handler, params):
+    handler.response.out.write("Post to session" + " and Param =" + str(params))

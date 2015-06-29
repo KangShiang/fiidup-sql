@@ -18,7 +18,7 @@ class Session(webapp2.RequestHandler):
         last_dir_string = str(subdirs[len(subdirs)-1])
         num_layers = len(subdirs)
         if num_layers == 2:
-            sessionHandler.get_session(self, None, req_params)
+            sessionHandler.get_session(self, req_params)
         else:
             self.response.status = 405
 
@@ -36,7 +36,7 @@ class Session(webapp2.RequestHandler):
         last_dir_string = str(subdirs[len(subdirs)-1])
         num_layers = len(subdirs)
         if num_layers == 2:
-            sessionHandler.post_session(self, None, req_params)
+            sessionHandler.post_session(self, req_params)
         else:
             self.response.status = 405
 
@@ -54,6 +54,6 @@ class Session(webapp2.RequestHandler):
         last_dir_string = str(subdirs[len(subdirs)-1])
         num_layers = len(subdirs)
         if num_layers == 2:
-            sessionHandler.delete_session(self, None, req_params)
+            sessionHandler.delete_session(self, req_params)
         else:
             self.response.status = 405
