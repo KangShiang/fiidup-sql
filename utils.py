@@ -3,6 +3,8 @@ import logging
 import json
 import base64
 import urllib
+import Objects.UserObj as user_lib
+from google.appengine.ext import ndb
 from Crypto.Cipher import AES
 
 def validate_data(request):
@@ -74,8 +76,24 @@ def dictionarize(obj):
         if isinstance(val, list):
             element = []
             for item in val:
-                elements.append(dictionarize(item))
+                element.append(dictionarize(item))
         else:
             element = dictionarize(val)
         result[key] = element
     return result
+
+def process_cookie(request):
+    cookie_value = request.cookies.get('FDUP')
+
+    if cookie_value:
+        user_id = decrypt(str(cookie_value))
+        key = ndb.Key(user_lib.UserModel, int(user_id))
+        ent = key.get()
+        if ent:
+            temp_user = user_lib.User(username=ent.username, password=ent.password, ID=str(user_id),
+                                      profile=json.loads(ent.profile))
+            return temp_user
+        else:
+            return None
+    else:
+        return None
