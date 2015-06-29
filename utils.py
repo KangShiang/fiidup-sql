@@ -1,7 +1,9 @@
 import errors
 import logging
 import json
-
+import base64
+import urllib
+from Crypto.Cipher import AES
 
 def validate_data(request):
     dictionary = {}
@@ -30,3 +32,50 @@ def validate_data(request):
             return error, None
     logging.info(dictionary)
     return None, dictionary
+
+# Encryption
+
+# Output = Base64Encode(Encrypt(Raw message(UID) + server's secret))
+
+# The encrypt function first encrpyts the message with our server secret key
+# Then, it base 64 encodes the encrpyted message (the ciphertext), so that
+# the return string contains no special/escape character.
+
+auth_secret_msg = 'AlexAbyxious1234'
+
+def encrypt(message):
+    obj = AES.new(auth_secret_msg)
+    ciphertext = obj.encrypt(message)
+    return urllib.quote(str(ciphertext))
+
+def decrypt(message):
+    ciphertext = urllib.unquote(message)
+    obj = AES.new(auth_secret_msg)
+    raw_msg = obj.decrypt(ciphertext)
+    return str(raw_msg)
+
+def json_obj(obj):
+    data = {}
+    for x in dir(obj):
+        if x != "id":
+            data[x] = getattr(obj,x)
+        else:
+            if obj.id:
+                data["id"] = obj.id
+    return data
+
+def dictionarize(obj):
+    if not  hasattr(obj,"__dict__"):
+        return obj
+    result = {}
+    for key, val in obj.__dict__.items():
+        if key.startswith("_"):
+            continue
+        if isinstance(val, list):
+            element = []
+            for item in val:
+                elements.append(dictionarize(item))
+        else:
+            element = dictionarize(val)
+        result[key] = element
+    return result
