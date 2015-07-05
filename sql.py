@@ -47,11 +47,18 @@ def get_retrieve_query_string(table, params=None, cond=None, limit=None):
     logging.info(params)
     query = "SELECT "
     if (params is None) or len(params) == 0:
-        query += " * "
-    else:
-        for param in params:
+        if table == "dish" or table == "restaurant":
+            params = get_column_names(table)
+        else:
+            query += " *   "    # last 2 spaces will always be removed
+            params = []
+
+    for param in params:
+        if params == 'location':
+            query = query + "AsText(" + param + "), "
+        else:
             query = query + param + ", "
-        query = query[:-2]
+    query = query[:-2]
     query = query + " FROM " + table
     if (cond is not None) and len(cond) > 0:
         query += " WHERE "
@@ -81,11 +88,17 @@ def get_retrieve_numeric_query_string(table, params=None, cond=None, limit=None)
     logging.info(params)
     query = "SELECT "
     if (params is None) or len(params) == 0:
-        query += " * "
-    else:
-        for param in params:
+        if table == "dish" or table == "restaurant":
+            params = get_column_names(table)
+        else:
+            query += " *   "    # last 2 spaces will always be removed
+            params = []
+    for param in params:
+        if params == 'location':
+            query = query + "AsText(" + param + "), "
+        else:
             query = query + param + ", "
-        query = query[:-2]
+    query = query[:-2]
     query = query + " FROM " + table
     if (cond is not None) and len(cond) > 0:
         query += " WHERE "
@@ -138,3 +151,12 @@ def get_modify_query_string(table, params, primary_key, id):
     query = query[:-2] + " where " + primary_key + "=" + id + ";"
     logging.info(query)
     return query
+
+'''
+Function to return the entire list of column names from input table
+'''
+def get_column_names(table):
+    cursor = db.cursor()
+    cursor.execute("DESCRIBE %s;" % table)
+    keys = [x[0] for x in cursor.fetchall()]
+    return keys
