@@ -94,10 +94,12 @@ def get_retrieve_numeric_query_string(table, params, cond):
     return query
 
 '''
-Function to generate 1 dictionary key, value pair which can be passed to cond
+Function to generate 1 dictionary key, value pair which can be added to cond
+* use dict.update(dict2) to update existing dict
 axis either 'X' or 'Y'; specifies longitude or latitude
 min and max are signed integers
 Returns one dictionary element
+eg: {'X(location)': 'BETWEEN 25 AND 50'}
 If axis, min or max is invalid, None will be returned
 '''
 def generate_location_range(axis, min, max):
@@ -118,15 +120,13 @@ def get_modify_query_string(table, params, primary_key, id):
     query = "UPDATE " + table + " SET"
     for key, value in params.iteritems():
         if key != primary_key:
-            try:
-                int(value)
+            if is_int(value):
                 query = query + " " + key + "=" + value + ","
-            except ValueError:
+            else:
                 if 'GeomFromText' in value:
                     query = query + " " + key + "=" + value + ", "
                 else:
                     query = query + " " + key + "=\"" + value + "\", "
     query = query[:-2] + " where " + primary_key + "=" + id + ";"
     logging.info(query)
-
     return query
