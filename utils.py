@@ -108,7 +108,7 @@ def process_cookie(request, response):
         return False, None
 
 
-def generate_json(request, uid, method, params, error):
+def generate_json(request, uid, method, data, error):
     url_string = str(request.url)
     url_obj = urlparse.urlparse(url_string)
     # str.split returns a list of strings. Google search python str.split for more detail.
@@ -120,7 +120,7 @@ def generate_json(request, uid, method, params, error):
             'url': "www.fiidup.com" + request.path + "?" + request.query_string,
             'method': method
         },
-        'data': params,
+        'data': data,
         'error': error
     }
     return json.dumps(dictionary)
