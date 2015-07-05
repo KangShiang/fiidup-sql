@@ -1,20 +1,6 @@
 import webapp2
 import sql
 
-table = 'dish'
-    params = ['dish_name']
-    k = generate_location_range('X', -10, 10)
-    cond = {'like_count': '> 20'}
-
-    db = MySQLdb.connect(host='173.194.107.106', port=3306, db='fiidup_main', user='all')
-    cond.update(k)
-    query = get_retrieve_numeric_query_string(table, params, cond)
-    print query
-    cursor = db.cursor()
-    cursor.execute(query)
-    res = cursor.fetchall()
-    print res
-
 def put_comment(handler, id, params):
     if id:
         handler.response.out.write("Put to comment " + "when id = " + id + " and Param =" + str(params))

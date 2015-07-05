@@ -3,6 +3,7 @@ import MySQLdb
 import sql as fiidup_sql
 import logging
 import json
+import cgi
 import utils
 
 def put_dish(handler, id, params):
@@ -36,10 +37,22 @@ def get_dish(handler, id, params):
     if id:
         cursor = fiidup_sql.db.cursor()
         try:
-            condition = [{"dish_id": "=%s" % id}]
+            condition = {"dish_id": id}
             query_string = fiidup_sql.get_retrieve_query_string(table="dish", cond=condition, limit=1)
             cursor.execute(query_string)
-            dish = cursor.fetchall()[0]
+            values = cursor.fetchall()[0]
+            new_values = []
+            for x in values:
+                try:
+                    int(x)
+                    new_values.append(x)
+                except (ValueError):
+                    new_values.append(cgi.escape(x))
+
+            cursor.execute("DESCRIBE %s" % "dish;")
+            keys = [x[0] for x in cursor.fetchall()]
+            dish = dict(zip(keys, new_values))
+            logging.info(dish)
             return dish, error
         except MySQLdb.Error, e:
             try:
