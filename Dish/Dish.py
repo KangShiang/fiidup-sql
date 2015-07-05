@@ -103,6 +103,9 @@ class Dish(webapp2.RequestHandler):
             self.response.status = 405
 
     def put(self):
+        authenticated, user = utils.process_cookie(self.request, self.response)
+        # if not authenticated:
+        #     return
         err, req_params = utils.validate_data(self.request)
         if err:
             self.response.out.write(err.message())
@@ -119,7 +122,9 @@ class Dish(webapp2.RequestHandler):
         try:
             int(last_dir_string)
         except ValueError:
-            self.response.status = 405
+            error = "ID not found"
+            self.response.out.write(utils.generate_json(self.request, 123, "PUT", None, error))
+            self.response.status = 403
             return
 
         if num_layers == 3:

@@ -120,6 +120,10 @@ def generate_location_range(axis, min, max):
             return {'Y(location)': temp}
     return None
 
+'''
+Function to generate
+'''
+
 def get_modify_query_string(table, params, primary_key, id):
     query = "UPDATE " + table + " SET"
     for key, value in params.iteritems():
