@@ -3,6 +3,7 @@ import MySQLdb
 import sql as fiidup_sql
 import logging
 import json
+import utils
 
 def put_dish(handler, id, params):
     if id:
@@ -23,7 +24,7 @@ def put_dish(handler, id, params):
 
 def get_dish(handler, id, params):
     if id:
-        handler.response.out.write("Get to dish " + "when id = " + id + " and Param =" + str(params))
+        handler.response.out.write(utils.generate_json(handler.request, id, "GET", params, None))
     else:
         handler.response.out.write("Get to dish" + " and Param =" + str(params))
 

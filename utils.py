@@ -6,6 +6,8 @@ import urllib
 import Objects.UserObj as user_lib
 from google.appengine.ext import ndb
 from Crypto.Cipher import AES
+import webapp2
+import urlparse
 
 def validate_data(request):
     dictionary = {}
@@ -20,7 +22,7 @@ def validate_data(request):
     else:
         for key in request.params:
             # if not request.get(key):
-            #     error = errors.Error("data::Invalid Data")
+            # error = errors.Error("data::Invalid Data")
             #     logging.error(error.message())
             #     return error, None
             if key.lower() == "location":
@@ -28,11 +30,11 @@ def validate_data(request):
             else:
                 dictionary[key.lower()] = request.get(key)
     for key, value in dictionary.iteritems():
-        if not value :
+        if not value:
             error = errors.Error("data::Invalid Data")
             logging.error(error.message())
             return error, None
-    #logging.info(dictionary)
+    # logging.info(dictionary)
     return None, dictionary
 
 # Encryption
@@ -45,10 +47,12 @@ def validate_data(request):
 
 auth_secret_msg = 'AlexAbyxious1234'
 
+
 def encrypt(message):
     obj = AES.new(auth_secret_msg)
     ciphertext = obj.encrypt(message)
     return urllib.quote(str(ciphertext))
+
 
 def decrypt(message):
     ciphertext = urllib.unquote(message)
@@ -56,18 +60,20 @@ def decrypt(message):
     raw_msg = obj.decrypt(ciphertext)
     return str(raw_msg)
 
+
 def json_obj(obj):
     data = {}
     for x in dir(obj):
         if x != "id":
-            data[x] = getattr(obj,x)
+            data[x] = getattr(obj, x)
         else:
             if obj.id:
                 data["id"] = obj.id
     return data
 
+
 def dictionarize(obj):
-    if not  hasattr(obj,"__dict__"):
+    if not hasattr(obj, "__dict__"):
         return obj
     result = {}
     for key, val in obj.__dict__.items():
@@ -81,6 +87,7 @@ def dictionarize(obj):
             element = dictionarize(val)
         result[key] = element
     return result
+
 
 def process_cookie(request, response):
     cookie_value = request.cookies.get('FDUP')
@@ -99,3 +106,22 @@ def process_cookie(request, response):
     else:
         response.status = 401
         return False, None
+
+
+def generate_json(request, uid, method, params, error):
+    url_string = str(request.url)
+    url_obj = urlparse.urlparse(url_string)
+    # str.split returns a list of strings. Google search python str.split for more detail.
+    subdirs = str(url_obj.path).split('/')
+    dictionary = {
+        'head': {
+            'uid': uid,
+            'type': subdirs[1],
+            'url': "www.fiidup.com" + request.path + "?" + request.query_string,
+            'method': method
+        },
+        'data': params,
+        'error': error
+    }
+    return json.dumps(dictionary)
+
