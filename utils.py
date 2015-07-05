@@ -117,7 +117,7 @@ def generate_json(request, uid, method, data, error):
         'head': {
             'uid': uid,
             'type': subdirs[1],
-            'url': "www.fiidup.com" + request.path + "?" + request.query_string,
+            'url': request.url,
             'method': method
         },
         'data': data,
