@@ -159,4 +159,5 @@ def get_column_names(table):
     cursor = db.cursor()
     cursor.execute("DESCRIBE %s;" % table)
     keys = [x[0] for x in cursor.fetchall()]
+    cursor.close()
     return keys
