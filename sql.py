@@ -39,7 +39,7 @@ def get_modify_query_string(table, params, primary_key, id):
                 query = query + " " + key + "=" + value + ","
             except ValueError:
                 if 'GeomFromText' in value:
-                    query = query + " " + key + "=\"" + value + "\", "
+                    query = query + " " + key + "=" + value + ", "
                 else:
                     query = query + " " + key + "=\"" + value + "\", "
     query = query[:-2] + " where " + primary_key + "=" + id + ";"
