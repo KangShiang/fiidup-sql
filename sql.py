@@ -2,9 +2,7 @@ import errors
 import logging
 import MySQLdb
 
-_INSTANCE_NAME = 'fiidup-sql:fiidup-db'
 db = MySQLdb.connect(host='173.194.107.106', port=3306, db='fiidup_main', user='all')
-##db = MySQLdb.connect(unix_socket='/cloudsql/' + _INSTANCE_NAME, db='fiidup_main', user='root', charset='utf 8')
 
 def is_int(x):
     try:
@@ -42,9 +40,10 @@ params should have a list of columns to SELECT
 eg: params = ['dish_name', 'restaurant_id']
 if params is empty, SELECT *
 cond should have a dictionary of key, value pairs as the WHERE clause
+limit specifies the LIMIT in integer, default None
 eg: cond = {'dish_name': 'Cake', 'like_count': 0}
 '''
-def get_retrieve_query_string(table, params, cond):
+def get_retrieve_query_string(table, params, cond, limit=None):
     logging.info(params)
     query = "SELECT "
     if len(params) == 0:
@@ -62,6 +61,8 @@ def get_retrieve_query_string(table, params, cond):
             else:
                 query = query + "(" + key + " = '" + cond[key] + "') AND "
         query = query[:-5]
+    if limit is not None:
+        query = query + " LIMIT " + str(limit)
     logging.info(query)
     return query
 
@@ -73,9 +74,10 @@ eg: params = ['dish_name', 'restaurant_id']
 if params is empty, SELECT *
 cond should have a dictionary of key, value pairs as the WHERE clause
 cond must be numeric, contains the operator, formatted as a string
+limit specifies the LIMIT, default None
 eg: cond = {'like_count': '< 10', 'comment_count': '> 20', 'tasted_count': '= 50'}
 '''
-def get_retrieve_numeric_query_string(table, params, cond):
+def get_retrieve_numeric_query_string(table, params, cond, limit=None):
     logging.info(params)
     query = "SELECT "
     if len(params) == 0:
@@ -90,6 +92,8 @@ def get_retrieve_numeric_query_string(table, params, cond):
         for key in cond.keys():
             query = query + "(" + key + " " + cond[key] + ") AND "
         query = query[:-5]
+    if limit is not None:
+        query = query + " LIMIT " + str(limit)
     logging.info(query)
     return query
 
