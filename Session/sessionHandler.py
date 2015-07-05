@@ -11,7 +11,10 @@ def delete_session(handler, params):
                                 secure=handler.app.config.get('secure_cookie'))
 
 def get_session(handler, params):
-    temp_user = utils.process_cookie(handler.request)
+    authenticated, temp_user = utils.process_cookie(handler.request, handler.response)
+    if not authenticated:
+        return
+
     if temp_user:
         handler.response.headers['Content-Type'] = 'application/json'
         dictionary = {

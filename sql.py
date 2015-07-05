@@ -113,3 +113,20 @@ def generate_location_range(axis, min, max):
         if (-90 < min < 90) and (-90 < max < 90):
             return {'Y(location)': temp}
     return None
+
+def get_modify_query_string(table, params, primary_key, id):
+    query = "UPDATE " + table + " SET"
+    for key, value in params.iteritems():
+        if key != primary_key:
+            try:
+                int(value)
+                query = query + " " + key + "=" + value + ","
+            except ValueError:
+                if 'GeomFromText' in value:
+                    query = query + " " + key + "=" + value + ", "
+                else:
+                    query = query + " " + key + "=\"" + value + "\", "
+    query = query[:-2] + " where " + primary_key + "=" + id + ";"
+    logging.info(query)
+
+    return query

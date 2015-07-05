@@ -1,10 +1,25 @@
 import webapp2
+import MySQLdb
+import sql as fiidup_sql
+import logging
+import json
 
 def put_dish(handler, id, params):
     if id:
-        handler.response.out.write("Put to dish " + "when id = " + id + " and Param =" + str(params))
+        cursor = fiidup_sql.db.cursor()
+        try:
+            query_string = fiidup_sql.get_modify_query_string("dish", params, "dish_id", id)
+            cursor.execute(query_string)
+            fiidup_sql.db.commit()
+        except MySQLdb.Error, e:
+            try:
+                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+            except IndexError:
+                logging.error("MySQL Error: %s" % str(e))
+        handler.response.out.write(json.dumps(params))
     else:
         handler.response.out.write("Put to dish" + " and Param =" + str(params))
+
 
 def get_dish(handler, id, params):
     if id:
@@ -12,8 +27,19 @@ def get_dish(handler, id, params):
     else:
         handler.response.out.write("Get to dish" + " and Param =" + str(params))
 
+
 def post_dish(handler, id, params):
     if id:
         handler.response.out.write("Post to dish " + "when id = " + id + " and Param =" + str(params))
     else:
-        handler.response.out.write("Post to dish" + " and Param =" + str(params))
+        cursor = fiidup_sql.db.cursor()
+        try:
+            query = fiidup_sql.get_insert_query_string("dish", params)
+            cursor.execute(query)
+            fiidup_sql.db.commit()
+        except MySQLdb.Error, e:
+            try:
+                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+            except IndexError:
+                logging.error("MySQL Error: %s" % str(e))
+        handler.response.out.write(json.dumps(params))
