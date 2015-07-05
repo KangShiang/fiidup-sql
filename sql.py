@@ -54,7 +54,7 @@ def get_retrieve_query_string(table, params=None, cond=None, limit=None):
             params = []
 
     for param in params:
-        if params == 'location':
+        if param == 'location':
             query = query + "AsText(" + param + "), "
         else:
             query = query + param + ", "
@@ -70,6 +70,7 @@ def get_retrieve_query_string(table, params=None, cond=None, limit=None):
         query = query[:-5]
     if limit is not None:
         query = query + " LIMIT " + str(limit)
+    logging.info(query)
     logging.info(query)
     return query
 
@@ -94,7 +95,7 @@ def get_retrieve_numeric_query_string(table, params=None, cond=None, limit=None)
             query += " *   "    # last 2 spaces will always be removed
             params = []
     for param in params:
-        if params == 'location':
+        if param == 'location':
             query = query + "AsText(" + param + "), "
         else:
             query = query + param + ", "
