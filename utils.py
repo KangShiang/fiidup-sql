@@ -82,7 +82,7 @@ def dictionarize(obj):
         result[key] = element
     return result
 
-def process_cookie(request):
+def process_cookie(request, response):
     cookie_value = request.cookies.get('FDUP')
 
     if cookie_value:
@@ -92,8 +92,10 @@ def process_cookie(request):
         if ent:
             temp_user = user_lib.User(username=ent.username, password=ent.password, ID=str(user_id),
                                       profile=json.loads(ent.profile))
-            return temp_user
+            return True, temp_user
         else:
-            return None
+            response.status = 401
+            return False, None
     else:
-        return None
+        response.status = 401
+        return False, None

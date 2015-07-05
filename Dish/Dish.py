@@ -72,6 +72,11 @@ class Dish(webapp2.RequestHandler):
             self.response.status = 405
 
     def post(self):
+        authenticated, user = utils.process_cookie(self.request, self.response)
+
+        if not authenticated:
+            return
+
         err, req_params = utils.validate_data(self.request)
         if err:
             self.response.out.write(err.message())
@@ -87,6 +92,7 @@ class Dish(webapp2.RequestHandler):
 
         # Only Handle the case of /dish
         if num_layers == 2 and last_dir_string == "dish":
+            dishHandler.post_dish(self, None, req_params)
             cursor = fiidup_sql.db.cursor()
             try:
                 query = fiidup_sql.get_insert_query_string("dish", req_params)
