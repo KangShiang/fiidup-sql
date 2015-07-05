@@ -1,11 +1,8 @@
 import webapp2
-import logging
 import utils
-import MySQLdb
-import sql as fiidup_sql
 import urlparse
-import json
 import dishHandler
+import sql as fiidup_sql
 from Comment import Comment as commentHandler
 from Like import Like as likeHandler
 from Tasted import Tasted as tastedHandler
@@ -73,7 +70,6 @@ class Dish(webapp2.RequestHandler):
 
     def post(self):
         authenticated, user = utils.process_cookie(self.request, self.response)
-
         if not authenticated:
             return
 
@@ -93,18 +89,6 @@ class Dish(webapp2.RequestHandler):
         # Only Handle the case of /dish
         if num_layers == 2 and last_dir_string == "dish":
             dishHandler.post_dish(self, None, req_params)
-            cursor = fiidup_sql.db.cursor()
-            try:
-                query = fiidup_sql.get_insert_query_string("dish", req_params)
-                cursor.execute(query)
-                fiidup_sql.db.commit()
-            except MySQLdb.Error, e:
-                try:
-                    logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
-                except IndexError:
-                    logging.error("MySQL Error: %s" % str(e))
-
-            self.response.out.write(json.dumps(req_params))
             return
         elif num_layers == 3:
             try:

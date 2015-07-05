@@ -32,7 +32,7 @@ def validate_data(request):
             error = errors.Error("data::Invalid Data")
             logging.error(error.message())
             return error, None
-    logging.info(dictionary)
+    #logging.info(dictionary)
     return None, dictionary
 
 # Encryption
