@@ -42,7 +42,7 @@ class Dish(webapp2.RequestHandler):
             dishHandler.get_dish(self, None, req_params)
         elif num_layers == 3:
             try:
-                # Handle the case when the url is /dish/:id
+                # Handle the case when the url is /dish/<info>
                 int(last_dir_string)
                 dishHandler.get_dish(self, last_dir_string, req_params)
             except ValueError:
@@ -56,7 +56,7 @@ class Dish(webapp2.RequestHandler):
                     return
         elif num_layers == 4:
             try:
-                # Handle the case when the url is /dish/:id
+                # Handle the case when the url is /dish/<info>:id
                 int(last_dir_string)
                 subdir_string = str(subdirs[2])
                 handling_function = get_sub_routes["GET_" + subdir_string]
@@ -69,10 +69,11 @@ class Dish(webapp2.RequestHandler):
             self.response.status = 405
 
     def post(self):
+        '''
         authenticated, user = utils.process_cookie(self.request, self.response)
         if not authenticated:
             return
-
+'''
         err, req_params = utils.validate_data(self.request)
         if err:
             self.response.out.write(err.message())
@@ -95,6 +96,15 @@ class Dish(webapp2.RequestHandler):
                 subdir_string = str(subdirs[2])
                 handling_function = post_sub_routes["POST_" + subdir_string]
                 getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
+                return
+            except KeyError:
+                self.response.status = 405
+                return
+        elif num_layers == 4:
+            try:
+                subdir_string = str(subdirs[2])
+                handling_function = post_sub_routes["POST_" + subdir_string]
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
                 return
             except KeyError:
                 self.response.status = 405
