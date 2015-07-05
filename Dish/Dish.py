@@ -44,7 +44,9 @@ class Dish(webapp2.RequestHandler):
             try:
                 # Handle the case when the url is /dish/:id
                 int(last_dir_string)
-                dishHandler.get_dish(self, last_dir_string, req_params)
+                dish, error = dishHandler.get_dish(self, last_dir_string, req_params)
+                self.response.out.write(utils.generate_json(self.request, 123, "GET", dish, error))
+                return
             except ValueError:
                 try:
                     subdir_string = str(subdirs[2])

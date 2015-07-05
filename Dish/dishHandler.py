@@ -51,7 +51,6 @@ def get_dish(handler, id, params):
             handler.response.status = 403
             return None, error
         cursor.close()
-        handler.response.out.write(utils.generate_json(handler.request, id, "GET", params, None))
     else:
         handler.response.out.write("Get to dish" + " and Param =" + str(params))
 
