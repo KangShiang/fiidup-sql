@@ -36,24 +36,24 @@ def get_insert_query_string(table, params):
 '''
 Function to query data from the database, with exact matching conditions
 table is the table to query FROM
-params should have a list of columns to SELECT
+params if specified, should have a list of columns to SELECT
 eg: params = ['dish_name', 'restaurant_id']
-if params is empty, SELECT *
-cond should have a dictionary of key, value pairs as the WHERE clause
-limit specifies the LIMIT in integer, default None
+if params is not specified or is empty, SELECT *
+cond if specified, should have a dictionary of key, value pairs as the WHERE clause
+limit if specified, indicates the LIMIT in integer, default None
 eg: cond = {'dish_name': 'Cake', 'like_count': 0}
 '''
-def get_retrieve_query_string(table, params, cond, limit=None):
+def get_retrieve_query_string(table, params=None, cond=None, limit=None):
     logging.info(params)
     query = "SELECT "
-    if len(params) == 0:
+    if (params is None) or len(params) == 0:
         query += " * "
     else:
         for param in params:
             query = query + param + ", "
         query = query[:-2]
     query = query + " FROM " + table
-    if len(cond) > 0:
+    if (cond is not None) and len(cond) > 0:
         query += " WHERE "
         for key in cond.keys():
             if is_int(cond[key]):
@@ -69,25 +69,25 @@ def get_retrieve_query_string(table, params, cond, limit=None):
 '''
 Function to query data from the database, with numeric operations
 table is the table to query FROM
-params should have a list of columns to SELECT
+params if specified, should have a list of columns to SELECT
 eg: params = ['dish_name', 'restaurant_id']
-if params is empty, SELECT *
-cond should have a dictionary of key, value pairs as the WHERE clause
+if params is not specified or is empty, SELECT *
+cond if specified, should have a dictionary of key, value pairs as the WHERE clause
 cond must be numeric, contains the operator, formatted as a string
-limit specifies the LIMIT, default None
+limit if specified, indicates the LIMIT, default None
 eg: cond = {'like_count': '< 10', 'comment_count': '> 20', 'tasted_count': '= 50'}
 '''
-def get_retrieve_numeric_query_string(table, params, cond, limit=None):
+def get_retrieve_numeric_query_string(table, params=None, cond=None, limit=None):
     logging.info(params)
     query = "SELECT "
-    if len(params) == 0:
+    if (params is None) or len(params) == 0:
         query += " * "
     else:
         for param in params:
             query = query + param + ", "
         query = query[:-2]
     query = query + " FROM " + table
-    if len(cond) > 0:
+    if (cond is not None) and len(cond) > 0:
         query += " WHERE "
         for key in cond.keys():
             query = query + "(" + key + " " + cond[key] + ") AND "
