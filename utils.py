@@ -110,18 +110,21 @@ def process_cookie(request, response):
 
 def generate_json(request, uid, method, data, error):
     url_string = str(request.url)
+    logging.info(url_string)
     url_obj = urlparse.urlparse(url_string)
     # str.split returns a list of strings. Google search python str.split for more detail.
     subdirs = str(url_obj.path).split('/')
+    logging.info(subdirs)
     dictionary = {
         'head': {
             'uid': uid,
             'type': subdirs[1],
-            'url': request.url,
+            'url': url_string,
             'method': method
         },
         'data': data,
         'error': error
     }
+    logging.info(json.dumps(dictionary))
     return json.dumps(dictionary)
 

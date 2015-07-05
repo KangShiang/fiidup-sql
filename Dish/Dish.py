@@ -2,6 +2,7 @@ import webapp2
 import utils
 import urlparse
 import dishHandler
+import logging
 import sql as fiidup_sql
 from Comment import Comment as commentHandler
 from Like import Like as likeHandler
@@ -42,10 +43,13 @@ class Dish(webapp2.RequestHandler):
             dishHandler.get_dish(self, None, req_params)
         elif num_layers == 3:
             try:
-                # Handle the case when the url is /dish/<info>
+                # Handle the case when the url is /dish/<id>
                 int(last_dir_string)
                 dish, error = dishHandler.get_dish(self, last_dir_string, req_params)
-                self.response.out.write(utils.generate_json(self.request, 123, "GET", dish, error))
+                logging.info(dish)
+                logging.info(error)
+                json = utils.generate_json(self.request, 123, "GET", dish, error)
+                # self.response.out.write()
                 return
             except ValueError:
                 try:
