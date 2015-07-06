@@ -125,6 +125,8 @@ def get_dish(handler, id, params):
 
 
 def post_dish(handler, id, params):
+    data = None
+    error = None
     if id:
         handler.response.out.write("Post to dish " + "when id = " + id + " and Param =" + str(params))
     else:
@@ -133,9 +135,15 @@ def post_dish(handler, id, params):
             query = fiidup_sql.get_insert_query_string("dish", params)
             cursor.execute(query)
             fiidup_sql.db.commit()
+            data = params
+            return data, error
         except MySQLdb.Error, e:
             try:
                 logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+                error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
             except IndexError:
                 logging.error("MySQL Error: %s" % str(e))
-        handler.response.out.write(json.dumps(params))
+                error = "MySQL Error: %s" % str(e)
+            handler.response.status = 403
+            return None, error
+        cursor.close()

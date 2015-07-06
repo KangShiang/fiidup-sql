@@ -83,6 +83,9 @@ class Dish(webapp2.RequestHandler):
         if not authenticated:
             return
 '''
+        data = None
+        error = None
+
         err, req_params = utils.validate_data(self.request)
         if err:
             self.response.out.write(err.message())
@@ -98,8 +101,7 @@ class Dish(webapp2.RequestHandler):
 
         # Only Handle the case of /dish
         if num_layers == 2 and last_dir_string == "dish":
-            dishHandler.post_dish(self, None, req_params)
-            return
+            data, error = dishHandler.post_dish(self, None, req_params)
         elif num_layers == 3:
             try:
                 subdir_string = str(subdirs[2])
@@ -120,6 +122,7 @@ class Dish(webapp2.RequestHandler):
                 return
         else:
             self.response.status = 405
+        self.response.out.write(utils.generate_json(self.request, 123, "GET", data, error))
 
     def put(self):
         data = None
