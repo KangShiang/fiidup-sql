@@ -27,6 +27,8 @@ post_sub_routes = {"POST_comment": "post_comment",
 
 class Dish(webapp2.RequestHandler):
     def get(self):
+        data = None
+        error = None
         err, req_params = utils.validate_data(self.request)
         if err:
             self.response.out.write(err.message())
@@ -39,27 +41,26 @@ class Dish(webapp2.RequestHandler):
         # Last element in the url
         last_dir_string = str(subdirs[len(subdirs)-1])
         num_layers = len(subdirs)
+
         if num_layers == 2:
-            dishHandler.get_dish(self, None, req_params)
+            data, error = dishHandler.get_dish(self, None, req_params)
         elif num_layers == 3:
             try:
                 # Handle the case when the url is /dish/<id>
                 int(last_dir_string)
-                dish, error = dishHandler.get_dish(self, last_dir_string, req_params)
-                logging.info(dish)
+                data, error = dishHandler.get_dish(self, last_dir_string, req_params)
+                logging.info(data)
                 logging.info(error)
-                json = utils.generate_json(self.request, 123, "GET", dish, error)
-                # self.response.out.write()
-                return
+
             except ValueError:
                 try:
                     subdir_string = str(subdirs[2])
                     handling_function = get_sub_routes["GET_" + subdir_string]
                     getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
-                    return
+
                 except KeyError:
                     self.response.status = 405
-                    return
+
         elif num_layers == 4:
             try:
                 # Handle the case when the url is /dish/<info>:id
@@ -70,9 +71,11 @@ class Dish(webapp2.RequestHandler):
                 # Return info of a specific dish
             except KeyError:
                 self.response.status = 405
-                return
+
         else:
             self.response.status = 405
+        self.response.out.write(utils.generate_json(self.request, 123, "GET", data, error))
+
 
     def post(self):
         '''
@@ -119,7 +122,9 @@ class Dish(webapp2.RequestHandler):
             self.response.status = 405
 
     def put(self):
-        authenticated, user = utils.process_cookie(self.request, self.response)
+        data = None
+        error = None
+        #authenticated, user = utils.process_cookie(self.request, self.response)
         # if not authenticated:
         #     return
         err, req_params = utils.validate_data(self.request)
@@ -144,15 +149,14 @@ class Dish(webapp2.RequestHandler):
             return
 
         if num_layers == 3:
-            dishHandler.put_dish(self, last_dir_string, req_params)
-            return
+            data, error = dishHandler.put_dish(self, last_dir_string, req_params)
         elif num_layers == 4:
             try:
                 subdir_string = str(subdirs[2])
                 handling_function = put_sub_routes["PUT_" + subdir_string]
                 getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
-                return
             except KeyError:
                 self.response.status = 405
-                return
-        self.response.status = 405
+        else:
+            self.response.status = 405
+        self.response.out.write(utils.generate_json(self.request, 123, "GET", data, error))
