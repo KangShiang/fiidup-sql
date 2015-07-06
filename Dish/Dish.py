@@ -9,8 +9,7 @@ from Like import Like as likeHandler
 from Tasted import Tasted as tastedHandler
 from Keep import Keep as keepHandler
 
-put_sub_routes = {"PUT_comment": "put_comment",
-                  "PUT_like": "put_like",
+put_sub_routes = {"PUT_like": "put_like",
                   "PUT_tasted": "put_tasted",
                   "PUT_keep": "put_keep"}
 
@@ -23,6 +22,8 @@ post_sub_routes = {"POST_comment": "post_comment",
                    "POST_like": "post_like",
                    "POST_tasted": "post_tasted",
                    "POST_keep": "post_keep"}
+
+delete_sub_routes = {"DELETE_comment": "delete_comment"}
 
 
 class Dish(webapp2.RequestHandler):
