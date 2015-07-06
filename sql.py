@@ -71,7 +71,6 @@ def get_retrieve_query_string(table, params=None, cond=None, limit=None):
     if limit is not None:
         query = query + " LIMIT " + str(limit)
     logging.info(query)
-    logging.info(query)
     return query
 
 '''
@@ -154,6 +153,16 @@ def get_modify_query_string(table, params, primary_key, id):
     return query
 
 '''
+Function to generate a query string which deletes an entry in the table
+based on the primary_key and the corresponding value
+'''
+def get_delete_query_string(table, primary_key, value):
+    query = "DELETE FROM " + str(table)
+    query += " WHERE " + str(primary_key) + " = " + str(value)
+    logging.info(query)
+    return query
+
+'''
 Function to return the entire list of column names from input table
 '''
 def get_column_names(table):
@@ -162,3 +171,6 @@ def get_column_names(table):
     keys = [x[0] for x in cursor.fetchall()]
     cursor.close()
     return keys
+
+def get_last_inserted_pkey(cursor):
+    return cursor.lastrowid
