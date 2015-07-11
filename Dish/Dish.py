@@ -57,8 +57,7 @@ class Dish(webapp2.RequestHandler):
                 try:
                     subdir_string = str(subdirs[2])
                     handling_function = get_sub_routes["GET_" + subdir_string]
-                    getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
-
+                    data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
                 except KeyError:
                     self.response.status = 405
 
@@ -68,7 +67,7 @@ class Dish(webapp2.RequestHandler):
                 int(last_dir_string)
                 subdir_string = str(subdirs[2])
                 handling_function = get_sub_routes["GET_" + subdir_string]
-                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
+                data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
                 # Return info of a specific dish
             except KeyError:
                 self.response.status = 405
@@ -107,20 +106,16 @@ class Dish(webapp2.RequestHandler):
             try:
                 subdir_string = str(subdirs[2])
                 handling_function = post_sub_routes["POST_" + subdir_string]
-                getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
-                return
+                data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
             except KeyError:
                 self.response.status = 405
-                return
         elif num_layers == 4:
             try:
                 subdir_string = str(subdirs[2])
                 handling_function = post_sub_routes["POST_" + subdir_string]
-                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
-                return
+                data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
             except KeyError:
                 self.response.status = 405
-                return
         else:
             self.response.status = 405
         self.response.out.write(utils.generate_json(self.request, 123, "GET", data, error))
@@ -128,6 +123,7 @@ class Dish(webapp2.RequestHandler):
     def put(self):
         data = None
         error = None
+        # TODO: remove comment
         #authenticated, user = utils.process_cookie(self.request, self.response)
         # if not authenticated:
         #     return
@@ -158,7 +154,7 @@ class Dish(webapp2.RequestHandler):
             try:
                 subdir_string = str(subdirs[2])
                 handling_function = put_sub_routes["PUT_" + subdir_string]
-                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
+                data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
             except KeyError:
                 self.response.status = 405
         else:
