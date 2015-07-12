@@ -1,19 +1,145 @@
 import webapp2
+import MySQLdb
+import sql as fiidup_sql
+import logging
+import json
+import cgi
+import utils
 
 def put_restaurant(handler, id, params):
+    error = None
     if id:
-        handler.response.out.write("Put to restaurant " + "when id = " + id + " and Param =" + str(params))
+        cursor = fiidup_sql.db.cursor()
+        try:
+            query_string = fiidup_sql.get_modify_query_string("restaurant", params, "restaurant_id", id)
+            cursor.execute(query_string)
+            fiidup_sql.db.commit()
+            return params, error
+        except MySQLdb.Error, e:
+            try:
+                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+                if e.args[0] == 1054:
+                    handler.response.status = 403
+                    error = "Invalid Argument"
+                    return params, error
+                error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+            except IndexError:
+                logging.error("MySQL Error: %s" % str(e))
+                error = "MySQL Error: %s" % str(e)
+
+            handler.response.status = 403
+            return None, error
+        cursor.close()
     else:
-        handler.response.out.write("Put to restaurant" + " and Param =" + str(params))
+        error = "ID not found"
+        handler.response.status = 403
+        return None, error
 
 def get_restaurant(handler, id, params):
+    error = None
+    restaurant = []
     if id:
-        handler.response.out.write("Get to restaurant " + "when id = " + id + " and Param =" + str(params))
+        cursor = fiidup_sql.db.cursor()
+        try:
+            condition = {"restaurant_id": id}
+            query_string = fiidup_sql.get_retrieve_query_string(table="restaurant", cond=condition, limit=1)
+            cursor.execute(query_string)
+            try:
+                values = cursor.fetchall()
+                new_values = []
+                for x in values:
+                    try:
+                        int(x)
+                        new_values.append(x)
+                    except (ValueError):
+                        new_values.append(cgi.escape(x))
+                cursor.execute("DESCRIBE %s" % "dish;")
+                keys = [x[0] for x in cursor.fetchall()]
+                restaurant = dict(zip(keys, new_values))
+                logging.info(restaurant)
+                return restaurant, error
+            except IndexError:
+                return restaurant, None
+        except MySQLdb.Error, e:
+            try:
+                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+                if e.args[0] == 1054:
+                    error = "Invalid Argument"
+                    return None , error
+                error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+            except IndexError:
+                logging.error("MySQL Error: %s" % str(e))
+                error = "MySQL Error: %s" % str(e)
+            handler.response.status = 403
+            return None, error
+        cursor.close()
     else:
-        handler.response.out.write("Get to restaurant" + " and Param =" + str(params))
+        cursor = fiidup_sql.db.cursor()
+        if params.get("count"):
+            count = params.get("count")
+            del params['count']
+        else:
+            count = 10
+
+        logging.info("GET RETAURANT WITH COUNT", count)
+
+        try:
+            condition = params
+            query_string = fiidup_sql.get_retrieve_numeric_query_string(table="restaurant", cond=condition, limit=count)
+            logging.info(query_string)
+            cursor.execute(query_string)
+            try:
+                values = cursor.fetchall()
+                cursor.execute("DESCRIBE %s" % "restaurant;")
+                keys = [x[0] for x in cursor.fetchall()]
+                restaurant_list = []
+                logging.info(values)
+                for list in values:
+                    logging.info("List:%s", list)
+                    new_values = []
+                    for x in list:
+                        new_values.append(x)
+                    restaurant = dict(zip(keys, new_values))
+                    restaurant_list.append(restaurant)
+                logging.info(restaurant_list)
+                return restaurant_list, error
+            except IndexError:
+                return restaurant, None
+        except MySQLdb.Error, e:
+            try:
+                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+                if e.args[0] == 1054:
+                    error = "Invalid Argument"
+                    return None , error
+                error = "Invalid Syntax"
+            except IndexError:
+                logging.error("MySQL Error: %s" % str(e))
+                error = "MySQL Error: %s" % str(e)
+            handler.response.status = 403
+            return None, error
+        cursor.close()
+        # handler.response.out.write("Get to dish" + " and Param =" + str(params))
 
 def post_restaurant(handler, id, params):
+    data = None
+    error = None
     if id:
         handler.response.out.write("Post to restaurant " + "when id = " + id + " and Param =" + str(params))
     else:
-        handler.response.out.write("Post to restaurant" + " and Param =" + str(params))
+        cursor = fiidup_sql.db.cursor()
+        try:
+            query = fiidup_sql.get_insert_query_string("restaurant", params)
+            cursor.execute(query)
+            fiidup_sql.db.commit()
+            data = params
+            return data, error
+        except MySQLdb.Error, e:
+            try:
+                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+                error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+            except IndexError:
+                logging.error("MySQL Error: %s" % str(e))
+                error = "MySQL Error: %s" % str(e)
+            handler.response.status = 403
+            return None, error
+        cursor.close()
