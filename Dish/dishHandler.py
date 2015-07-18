@@ -127,10 +127,11 @@ def get_dish(handler, id, params):
 def post_dish(handler, id, params):
     data = None
     error = None
+    cursor = fiidup_sql.db.cursor()
     if id:
-        handler.response.out.write("Post to dish " + "when id = " + id + " and Param =" + str(params))
+        error = "Key specified for a POST request"
+        handler.response.status = 403
     else:
-        cursor = fiidup_sql.db.cursor()
         try:
             query = fiidup_sql.get_insert_query_string("dish", params)
             cursor.execute(query)
@@ -145,13 +146,31 @@ def post_dish(handler, id, params):
                 logging.error("MySQL Error: %s" % str(e))
                 error = "MySQL Error: %s" % str(e)
             handler.response.status = 403
-            return None, error
-        cursor.close()
+    cursor.close()
+    return data, error
 
 def delete_dish(handler, id, params):
+    # id represents dish_id
     data = None
     error = None
+    cursor = fiidup_sql.db.cursor()
     if id:
-        handler.response.out.write("Delete dish " + "when id = " + id + " and Param =" + str(params))
+        try:
+            query = fiidup_sql.get_delete_query_string('dish', 'dish_id', id)
+            cursor.execute(query)
+            fiidup_sql.db.commit()
+            data = {'dish_id': id}
+        except MySQLdb.Error, e:
+            try:
+                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+                error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+            except IndexError:
+                logging.error("MySQL Error: %s" % str(e))
+                error = "MySQL Error: %s" % str(e)
+            fiidup_sql.db.rollback()
+            handler.response.status = 403
     else:
-        handler.response.out.write("Delete dish " + " and Param =" + str(params))
+        error = "Key not found"
+        handler.response.status = 403
+    cursor.close()
+    return data, error
