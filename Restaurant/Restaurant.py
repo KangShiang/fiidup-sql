@@ -159,3 +159,39 @@ class Restaurant(webapp2.RequestHandler):
         else:
             self.response.status = 405
         self.response.out.write(utils.generate_json(self.request, 123, "GET", data, error))
+
+
+    def delete(self):
+        data = None
+        error = None
+        #authenticated, user = utils.process_cookie(self.request, self.response)
+        # if not authenticated:
+        #     return
+
+        url_string = str(self.request.url)
+        url_obj = urlparse.urlparse(url_string)
+        # str.split returns a list of strings. Google search python str.split for more detail.
+        subdirs = str(url_obj.path).split('/')
+        # Last element in the url
+        last_dir_string = str(subdirs[len(subdirs)-1])
+        num_layers = len(subdirs)
+        try:
+            int(last_dir_string)
+        except ValueError:
+            error = "ID not found"
+            self.response.out.write(utils.generate_json(self.request, 123, "PUT", None, error))
+            self.response.status = 403
+            return
+
+        if num_layers == 3:
+            data, error = restaurantHandler.delete_restaurant(self, last_dir_string)
+        elif num_layers == 4:
+            try:
+                subdir_string = str(subdirs[2])
+                handling_function = put_sub_routes["PUT_" + subdir_string]
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
+            except KeyError:
+                self.response.status = 405
+        else:
+            self.response.status = 405
+        self.response.out.write(utils.generate_json(self.request, 123, "GET", data, error))

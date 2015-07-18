@@ -143,3 +143,26 @@ def post_restaurant(handler, id, params):
             handler.response.status = 403
             return None, error
         cursor.close()
+
+def delete_restaurant(handler, id):
+    logging.info(id)
+    data = None
+    error = None
+
+    cursor = fiidup_sql.db.cursor()
+    try:
+        query = fiidup_sql.get_delete_query_string("restaurant", "restaurant_id", id)
+        cursor.execute(query)
+        fiidup_sql.db.commit()
+        data = {'status': 'Success'}
+        return data, error
+    except MySQLdb.Error, e:
+        try:
+            logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+            error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+        except IndexError:
+            logging.error("MySQL Error: %s" % str(e))
+            error = "MySQL Error: %s" % str(e)
+        handler.response.status = 403
+        return None, error
+    cursor.close()
