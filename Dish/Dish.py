@@ -23,7 +23,10 @@ post_sub_routes = {"POST_comment": "post_comment",
                    "POST_tasted": "post_tasted",
                    "POST_keep": "post_keep"}
 
-delete_sub_routes = {"DELETE_comment": "delete_comment"}
+delete_sub_routes = {"DELETE_comment": "delete_comment",
+                     "DELETE_like": "delete_like",
+                     "DELETE_tasted": "delete_tasted",
+                     "DELETE_keep": "delete_keep"}
 
 
 class Dish(webapp2.RequestHandler):
@@ -78,6 +81,7 @@ class Dish(webapp2.RequestHandler):
 
 
     def post(self):
+        # TODO: remove comment
         '''
         authenticated, user = utils.process_cookie(self.request, self.response)
         if not authenticated:
@@ -118,7 +122,7 @@ class Dish(webapp2.RequestHandler):
                 self.response.status = 405
         else:
             self.response.status = 405
-        self.response.out.write(utils.generate_json(self.request, 123, "GET", data, error))
+        self.response.out.write(utils.generate_json(self.request, 123, "POST", data, error))
 
     def put(self):
         data = None
@@ -144,9 +148,7 @@ class Dish(webapp2.RequestHandler):
             int(last_dir_string)
         except ValueError:
             error = "ID not found"
-            self.response.out.write(utils.generate_json(self.request, 123, "PUT", None, error))
             self.response.status = 403
-            return
 
         if num_layers == 3:
             data, error = dishHandler.put_dish(self, last_dir_string, req_params)
@@ -159,4 +161,43 @@ class Dish(webapp2.RequestHandler):
                 self.response.status = 405
         else:
             self.response.status = 405
-        self.response.out.write(utils.generate_json(self.request, 123, "GET", data, error))
+        self.response.out.write(utils.generate_json(self.request, 123, "PUT", data, error))
+
+    def delete(self):
+        data = None
+        error = None
+        # TODO: remove comment
+        #authenticated, user = utils.process_cookie(self.request, self.response)
+        # if not authenticated:
+        #     return
+        err, req_params = utils.validate_data(self.request)
+        if err:
+            self.response.out.write(err.message())
+            return
+
+        url_string = str(self.request.url)
+        url_obj = urlparse.urlparse(url_string)
+        # str.split returns a list of strings. Google search python str.split for more detail.
+        subdirs = str(url_obj.path).split('/')
+        # Last element in the url
+        last_dir_string = str(subdirs[len(subdirs)-1])
+        num_layers = len(subdirs)
+
+        try:
+            int(last_dir_string)
+        except ValueError:
+            error = "ID not found"
+            self.response.status = 403
+
+        if num_layers == 3:
+            data, error = dishHandler.delete_dish(self, last_dir_string, req_params)
+        elif num_layers == 4:
+            try:
+                subdir_string = str(subdirs[2])
+                handling_function = delete_sub_routes["DELETE_" + subdir_string]
+                data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
+            except KeyError:
+                self.response.status = 405
+        else:
+            self.response.status = 405
+        self.response.out.write(utils.generate_json(self.request, 123, "DELETE", data, error))

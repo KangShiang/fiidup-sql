@@ -5,32 +5,27 @@ import utils
 import logging
 
 def delete_comment(handler, id, params):
-    # id represents dish_id
+    # id represents comment_id
     data = None
     error = None
     cursor = sql.db.cursor()
     if id:
-        # extract only necessary info
-        comment_id = params.get('comment_id')
-        if comment_id is None:
-            error = "Insufficient info to delete comment"
-            handler.response.status = 403
-        else:
+        try:
+            query = sql.get_delete_query_string('comment', 'comment_id', id)
+            cursor.execute(query)
+            sql.db.commit()
+            data = {'comment_id': id}
+        except MySQLdb.Error, e:
             try:
-                query = sql.get_delete_query_string('comment', 'comment_id', comment_id)
-                cursor.execute(query)
-                sql.db.commit()
-            except MySQLdb.Error, e:
-                try:
-                    logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
-                    error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-                except IndexError:
-                    logging.error("MySQL Error: %s" % str(e))
-                    error = "MySQL Error: %s" % str(e)
-                sql.db.rollback()
-                handler.response.status = 403
+                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+                error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+            except IndexError:
+                logging.error("MySQL Error: %s" % str(e))
+                error = "MySQL Error: %s" % str(e)
+            sql.db.rollback()
+            handler.response.status = 403
     else:
-        error = "ID not found"
+        error = "Key not found"
         handler.response.status = 403
     cursor.close()
     return data, error

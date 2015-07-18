@@ -147,3 +147,11 @@ def post_dish(handler, id, params):
             handler.response.status = 403
             return None, error
         cursor.close()
+
+def delete_dish(handler, id, params):
+    data = None
+    error = None
+    if id:
+        handler.response.out.write("Delete dish " + "when id = " + id + " and Param =" + str(params))
+    else:
+        handler.response.out.write("Delete dish " + " and Param =" + str(params))
