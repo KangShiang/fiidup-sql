@@ -11,6 +11,9 @@ def is_int(x):
         return False
     return True
 
+# TODO: queries may be susceptible to sql injection when exposed!!!
+# Consider validating data: remove dangerous characters
+
 def get_insert_query_string(table, params):
     logging.info(params)
     query = "INSERT INTO " + table + " ("
@@ -41,7 +44,7 @@ eg: params = ['dish_name', 'restaurant_id']
 if params is not specified or is empty, SELECT *
 cond if specified, should have a dictionary of key, value pairs as the WHERE clause
 limit if specified, indicates the LIMIT in integer, default None
-eg: cond = {'dish_name': 'Cake', 'like_count': 0}
+eg: cond = {'dish_name': 'Cake', 'like_count': 0, 'dish_id': [123, 345]}
 '''
 def get_retrieve_query_string(table, params=None, cond=None, limit=None):
     logging.info(params)
@@ -63,7 +66,15 @@ def get_retrieve_query_string(table, params=None, cond=None, limit=None):
     if (cond is not None) and len(cond) > 0:
         query += " WHERE "
         for key in cond.keys():
-            if is_int(cond[key]):
+            if type(cond[key]) is list:
+                query = query + "(" + key + " IN ("
+                for element in cond[key]:
+                    if is_int(element):
+                        query = query + str(element) + ", "
+                    else:
+                        query = query + "'" + element + "', "
+                query = query[:-2] + ")) AND "
+            elif is_int(cond[key]):
                 query = query + "(" + key + " = " + str(cond[key]) + ") AND "
             else:
                 query = query + "(" + key + " = '" + cond[key] + "') AND "
