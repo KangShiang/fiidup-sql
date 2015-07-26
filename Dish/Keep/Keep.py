@@ -17,6 +17,9 @@ def put_keep(handler, id, params):
         if user_id is None or keep is None:
             error = "Insufficient info to update dish_keep"
             handler.response.status = 403
+        elif keep != "True":
+            error = "keep can only be True - unkeeping not allowed"
+            handler.response.status = 403
         else:
             # encode user_id as ascii string
             user_id = user_id.encode('ascii')
@@ -29,21 +32,18 @@ def put_keep(handler, id, params):
                 # user_list is a string
                 user_list = cursor.fetchall()[0][1]
                 user_list = user_list.strip('[]').split(', ')
-                # if keep is True (user keeps this dish)
+                # keep is True (user keeps this dish)
                 # append user_id
                 # increase keep_count in dish table
-                if keep == 'True' and user_id not in user_list:
+                if user_id not in user_list:
                     logging.info("keep")
                     user_list.append(user_id)
-                # if keep is False (user unkeep this dish)
-                # remove user_id
-                # decrease keep_count in dish table
-                elif keep == 'False' and user_id in user_list:
-                    logging.info("unkeep")
-                    user_list.remove(user_id)
+                # if keep is False (shouldn't be able to unkeep)
                 else:
-                    # assuming keep will only hold values: true or false - ignore otherwise
+                    # user_id already in the list, don't update table
                     logging.info("Not an error: May just be inconsistency in UI and database")
+                    user_list = None
+                    data = {'dish_id': id}
             except MySQLdb.Error, e:
                 try:
                     logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
@@ -53,25 +53,26 @@ def put_keep(handler, id, params):
                     error = "MySQL Error: %s" % str(e)
                 handler.response.status = 403
 
-            # convert user_list to a string, remove "'" from individual elements
-            user_list = str(user_list).replace("'", '')
-            # modify entry in database: entry should exist upon dish creation
-            logging.info(user_list)
-            try:
-                query = sql.get_modify_query_string(table='dish_keep', params={'user_id': user_list},
-                                                    primary_key='dish_id', id=id)
-                cursor.execute(query)
-                sql.db.commit()
-                data = {'dish_id': id}
-            except MySQLdb.Error, e:
+            if user_list is not None:
+                # convert user_list to a string, remove "'" from individual elements
+                user_list = str(user_list).replace("'", '')
+                # modify entry in database: entry should exist upon dish creation
+                logging.info(user_list)
                 try:
-                    logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
-                    error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-                except IndexError:
-                    logging.error("MySQL Error: %s" % str(e))
-                    error = "MySQL Error: %s" % str(e)
-                sql.db.rollback()
-                handler.response.status = 403
+                    query = sql.get_modify_query_string(table='dish_keep', params={'user_id': user_list},
+                                                        primary_key='dish_id', id=id)
+                    cursor.execute(query)
+                    sql.db.commit()
+                    data = {'dish_id': id}
+                except MySQLdb.Error, e:
+                    try:
+                        logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+                        error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+                    except IndexError:
+                        logging.error("MySQL Error: %s" % str(e))
+                        error = "MySQL Error: %s" % str(e)
+                    sql.db.rollback()
+                    handler.response.status = 403
     else:
         error = "ID not found"
         handler.response.status = 403
