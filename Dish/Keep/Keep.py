@@ -11,14 +11,15 @@ def put_keep(handler, id, params):
     cursor = sql.db.cursor()
     if id:
         # extract only necessary info
-        # encode user_id as ascii string
-        user_id = params.get('user_id').encode('ascii')
+        user_id = params.get('user_id')
         keep = params.get('keep')
         dict = {'dish_id': id, 'user_id': user_id}
-        if user_id is None:
+        if user_id is None or keep is None:
             error = "Insufficient info to update dish_keep"
             handler.response.status = 403
         else:
+            # encode user_id as ascii string
+            user_id = user_id.encode('ascii')
             # query dish_keep based on dish_id for user_id
             try:
                 cond = {'dish_id': str(id)}
