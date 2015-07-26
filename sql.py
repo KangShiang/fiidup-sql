@@ -145,7 +145,8 @@ def generate_location_range(axis, min, max):
     return None
 
 '''
-Function to generate
+Function to generate a query string which updates an entry in the table
+based on the primary_key
 '''
 
 def get_modify_query_string(table, params, primary_key, id):
@@ -158,7 +159,7 @@ def get_modify_query_string(table, params, primary_key, id):
                 if 'GeomFromText' in value:
                     query = query + " " + key + "=" + value + ", "
                 else:
-                    query = query + " " + key + "=\"" + value + "\", "
+                    query = query + " " + key + "='" + value + "', "
     query = query[:-2] + " where " + primary_key + "=" + id + ";"
     logging.info(query)
     return query
