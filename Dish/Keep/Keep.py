@@ -31,10 +31,9 @@ def put_keep(handler, id, params):
                 # expects only one result: ((dish_id, 'user_list'),)
                 # user_list is a string
                 user_list = cursor.fetchall()[0][1]
-                user_list = user_list.strip('[]').split(', ')
+                user_list = list() if user_list == '' else user_list.strip('[]').split(', ')
                 # keep is True (user keeps this dish)
                 # append user_id
-                # increase keep_count in dish table
                 if user_id not in user_list:
                     logging.info("keep")
                     user_list.append(user_id)
@@ -60,6 +59,10 @@ def put_keep(handler, id, params):
                 logging.info(user_list)
                 try:
                     query = sql.get_modify_query_string(table='dish_keep', params={'user_id': user_list},
+                                                        primary_key='dish_id', id=id)
+                    cursor.execute(query)
+                    # increase keep_count in dish table
+                    query = sql.get_modify_query_string(table='dish', params={'keep_count': 'keep_count + 1'},
                                                         primary_key='dish_id', id=id)
                     cursor.execute(query)
                     sql.db.commit()
