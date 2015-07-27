@@ -1,7 +1,5 @@
-import webapp2
 import MySQLdb
 import sql
-import utils
 import logging
 
 def delete_comment(handler, id, params):
@@ -12,6 +10,10 @@ def delete_comment(handler, id, params):
     if id:
         try:
             query = sql.get_delete_query_string('comment', 'comment_id', id)
+            cursor.execute(query)
+            # decrement comment_count in dish table
+            param = {'comment_count': 'comment_count - 1'}
+            query = sql.get_modify_query_string(table='dish', params=param, primary_key='dish_id', id=id)
             cursor.execute(query)
             sql.db.commit()
             data = {'comment_id': id}
@@ -84,6 +86,10 @@ def post_comment(handler, id, params):
         else:
             try:
                 query = sql.get_insert_query_string('comment', dict)
+                cursor.execute(query)
+                # increment comment_count in dish table
+                param = {'comment_count': 'comment_count + 1'}
+                query = sql.get_modify_query_string(table='dish', params=param, primary_key='dish_id', id=id)
                 cursor.execute(query)
                 sql.db.commit()
                 data = {'comment_id': sql.get_last_inserted_pkey(cursor)}
