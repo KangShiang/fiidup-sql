@@ -18,17 +18,12 @@ get_sub_routes = {"GET_comment": "get_comment",
                   "GET_tasted": "get_tasted",
                   "GET_keep": "get_keep"}
 
-post_sub_routes = {"POST_comment": "post_comment",
-                   "POST_like": "post_like",
-                   "POST_tasted": "post_tasted",
-                   "POST_keep": "post_keep"}
+post_sub_routes = {"POST_comment": "post_comment"}
 
-delete_sub_routes = {"DELETE_comment": "delete_comment",
-                     "DELETE_like": "delete_like",
-                     "DELETE_tasted": "delete_tasted",
-                     "DELETE_keep": "delete_keep"}
+delete_sub_routes = {"DELETE_comment": "delete_comment"}
 
-
+# TODO: when a dish is added, automatically insert an entry in dish_keep, dish)like, and dish_tasted
+# TODO: when a dish is removed. delete the entry from corresponding tables
 class Dish(webapp2.RequestHandler):
     def get(self):
         data = None
