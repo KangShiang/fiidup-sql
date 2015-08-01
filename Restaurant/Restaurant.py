@@ -153,6 +153,7 @@ class Restaurant(webapp2.RequestHandler):
             try:
                 subdir_string = str(subdirs[2])
                 handling_function = put_sub_routes["PUT_" + subdir_string]
+                logging.info(handling_function)
                 getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
             except KeyError:
                 self.response.status = 405

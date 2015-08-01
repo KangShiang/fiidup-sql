@@ -53,7 +53,7 @@ def get_restaurant(handler, id, params):
                         new_values.append(x)
                     except (ValueError):
                         new_values.append(cgi.escape(x))
-                cursor.execute("DESCRIBE %s" % "dish;")
+                cursor.execute("DESCRIBE %s" % "restaurant  ;")
                 keys = [x[0] for x in cursor.fetchall()]
                 restaurant = dict(zip(keys, new_values))
                 logging.info(restaurant)

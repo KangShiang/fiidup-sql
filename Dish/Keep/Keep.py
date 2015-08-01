@@ -1,4 +1,5 @@
 import webapp2
+import logging
 
 def put_keep(handler, id, params):
     if id:
