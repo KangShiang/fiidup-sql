@@ -22,11 +22,6 @@ get_sub_routes = {"GET_like": "get_like",
                   "GET_review": "get_review",
                   "GET_keep": "get_keep"}
 
-post_sub_routes = {"POST_like": "post_like",
-                   "POST_visited": "post_visited",
-                   "POST_review": "post_review",
-                   "POST_keep": "post_keep"}
-
 class Restaurant(webapp2.RequestHandler):
     def get(self):
         data = None
@@ -58,7 +53,7 @@ class Restaurant(webapp2.RequestHandler):
                 try:
                     subdir_string = str(subdirs[2])
                     handling_function = get_sub_routes["GET_" + subdir_string]
-                    getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
+                    data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
 
                 except KeyError:
                     self.response.status = 405
@@ -69,7 +64,7 @@ class Restaurant(webapp2.RequestHandler):
                 int(last_dir_string)
                 subdir_string = str(subdirs[2])
                 handling_function = get_sub_routes["GET_" + subdir_string]
-                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
+                data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
                 # Return info of a specific dish
             except KeyError:
                 self.response.status = 405
@@ -98,26 +93,8 @@ class Restaurant(webapp2.RequestHandler):
         # Only Handle the case of /dish
         if num_layers == 2 and last_dir_string == "restaurant":
             data, error = restaurantHandler.post_restaurant(self, None, req_params)
-        elif num_layers == 3:
-            try:
-                subdir_string = str(subdirs[2])
-                handling_function = post_sub_routes["POST_" + subdir_string]
-                getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
-                return
-            except KeyError:
-                self.response.status = 405
-                return
-        elif num_layers == 4:
-            try:
-                subdir_string = str(subdirs[2])
-                handling_function = post_sub_routes["POST_" + subdir_string]
-                getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
-                return
-            except KeyError:
-                self.response.status = 405
-                return
         else:
-            self.response.status = 405
+            self.response.status = 404
         self.response.out.write(utils.generate_json(self.request, 123, "GET", data, error))
 
     def put(self):

@@ -30,8 +30,8 @@ def put_keep(handler, id, params):
             error = "Couldn't retrieve keep"
             return None, error
 
+        kept_users = restaurant_keep.get('user_id')
         if params.get('keep'):
-            kept_users = restaurant_keep.get('user_id')
             if params.get('myid') in kept_users:
                 result = {'status': 'already there'}
                 return result, error
@@ -70,4 +70,36 @@ def put_keep(handler, id, params):
     else:
         error = "ID not found"
         handler.response.status = 403
-        return None, error
+        return result, error
+
+def get_keep(handler, id, params):
+    # id represents dish_id
+    data = None
+    error = None
+    cursor = fiidup_sql.db.cursor()
+    if id:
+        try:
+            cond = {'restaurant_id': str(id)}
+            query = fiidup_sql.get_retrieve_query_string(table='restaurant_keep', cond=cond)
+            cursor.execute(query)
+            datalist = cursor.fetchall()
+            data = []
+            keys = fiidup_sql.get_column_names('restaurant_keep')
+            for x in datalist:
+                x = dict(zip(keys, x))
+                data.append(x)
+            logging.info(data)
+        except MySQLdb.Error, e:
+            try:
+                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+                error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+            except IndexError:
+                logging.error("MySQL Error: %s" % str(e))
+                error = "MySQL Error: %s" % str(e)
+            handler.response.status = 403
+    else:
+        error = "ID not found"
+        handler.response.status = 403
+    cursor.close()
+    logging.info(data)
+    return data, error
