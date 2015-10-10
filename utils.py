@@ -9,32 +9,59 @@ from Crypto.Cipher import AES
 import webapp2
 import urlparse
 
+def parse_request(request):
+    url_string = str(self.request.url)
+    url_obj = urlparse.urlparse(url_string)
+
 def validate_data(request):
     dictionary = {}
-    if "json" in request.headers['Content-Type']:
-        dictionary = json.loads(request.body)
-        try:
-            # x = dictionary["location"]
-            dictionary["location"] = "GeomFromText('" + dictionary["location"] + "')"
-        except KeyError:
-            pass
-        logging.info("body:  %s", request.body)
-    else:
+    logging.info(request.method)
+    if request.method == 'POST' or request.method == 'PUT':
+        if "json" in request.headers['Content-Type'] or request.headers['Content-Type'] == '':
+            dictionary = json.loads(request.body)
+            try:
+                dictionary["location"] = "GeomFromText('" + dictionary["location"] + "')"
+            except KeyError:
+                pass
+            logging.info("body:  %s", request.body)
+        elif "x-www-form-urlencoded" in request.headers['Content-Type']:
+            for key in request.params:
+                # if not request.get(key):
+                # error = errors.Error("data::Invalid Data")
+                #     logging.error(error.message())
+                #     return error, None
+                if key.lower() == "location":
+                    dictionary[key.lower()] = "GeomFromText('" + request.get(key) + "')"
+                else:
+                    dictionary[key.lower()] = request.get(key)
+        else:
+            error = errors.Error("headers::Invalid Header:Content-Type")
+            logging.error(error.message())
+            return error, None
+    elif request.method == 'GET':
         for key in request.params:
-            # if not request.get(key):
-            # error = errors.Error("data::Invalid Data")
-            #     logging.error(error.message())
-            #     return error, None
             if key.lower() == "location":
                 dictionary[key.lower()] = "GeomFromText('" + request.get(key) + "')"
             else:
                 dictionary[key.lower()] = request.get(key)
-    for key, value in dictionary.iteritems():
-        if not value:
-            error = errors.Error("data::Invalid Data")
-            logging.error(error.message())
-            return error, None
-    # logging.info(dictionary)
+    elif request.method == 'DELETE':
+        # check the data for DELETE. Have to add the function
+        pass
+    else:
+        error = errors.Error("method::Not Allowed")
+        logging.error(error.message())
+        return error, None
+
+    if dictionary :
+        for key, value in dictionary.iteritems():
+            if not value:
+                error = errors.Error("data::Invalid Data")
+                logging.error(error.message())
+                return error, None
+    else:
+        error = errors.Error("data::Empty Data")
+        logging.error(error.message())
+        return error, None
     return None, dictionary
 
 # Encryption

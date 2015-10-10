@@ -2,7 +2,7 @@ import re
 import logging
 import MySQLdb
 
-db = MySQLdb.connect(host='173.194.107.106', port=3306, db='fiidup_main', user='all')
+db = MySQLdb.connect(host='localhost', port=3306, db='fiidup_main', user='all')
 
 def is_int(x):
     try:

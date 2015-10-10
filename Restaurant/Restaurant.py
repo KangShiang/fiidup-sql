@@ -14,13 +14,16 @@ from Keep import Keep as keepHandler
 
 put_sub_routes = {"PUT_like": "put_like",
                   "PUT_visited": "put_visited",
-                  "PUT_review": "put_review",
                   "PUT_keep": "put_keep"}
 
 get_sub_routes = {"GET_like": "get_like",
                   "GET_visited": "get_visited",
                   "GET_review": "get_review",
                   "GET_keep": "get_keep"}
+
+post_sub_routes = {"POST_review": "post_review"}
+
+delete_sub_routes = {"DELETE_review": "delete_review"}
 
 class Restaurant(webapp2.RequestHandler):
     def get(self):
@@ -41,23 +44,11 @@ class Restaurant(webapp2.RequestHandler):
 
         if num_layers == 2:
             data, error = restaurantHandler.get_restaurant(self, None, req_params)
-        elif num_layers == 3:
-            try:
-                # Handle the case when the url is /dish/<id>
+        elif num_layers == 3 :
+            if not req_params.:
+                # Handle the case when the url is /restaurant/<id>
                 int(last_dir_string)
                 data, error = restaurantHandler.get_restaurant(self, last_dir_string, req_params)
-                logging.info(data)
-                logging.info(error)
-
-            except ValueError:
-                try:
-                    subdir_string = str(subdirs[2])
-                    handling_function = get_sub_routes["GET_" + subdir_string]
-                    data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
-
-                except KeyError:
-                    self.response.status = 405
-
         elif num_layers == 4:
             try:
                 # Handle the case when the url is /dish/<info>:id
@@ -68,7 +59,6 @@ class Restaurant(webapp2.RequestHandler):
                 # Return info of a specific dish
             except KeyError:
                 self.response.status = 405
-
         else:
             self.response.status = 405
         self.response.out.write(utils.generate_json(self.request, 123, "GET", data, error))
@@ -90,7 +80,7 @@ class Restaurant(webapp2.RequestHandler):
         last_dir_string = str(subdirs[len(subdirs)-1])
         num_layers = len(subdirs)
 
-        # Only Handle the case of /dish
+        # Only Handle the case of /restaurant
         if num_layers == 2 and last_dir_string == "restaurant":
             data, error = restaurantHandler.post_restaurant(self, None, req_params)
         else:
