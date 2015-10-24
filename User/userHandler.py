@@ -17,3 +17,9 @@ def post_user(handler, id, params):
         handler.response.out.write("Post to user " + "when id = " + id + " and Param =" + str(params))
     else:
         handler.response.out.write("Post to user" + " and Param =" + str(params))
+
+def delete_user(handler, id, params):
+    if id:
+        handler.response.out.write("Delete user " + "when id = " + id + " and Param =" + str(params))
+    else:
+        handler.response.out.write("Delete user" + " and Param =" + str(params))
