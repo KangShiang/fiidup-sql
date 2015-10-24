@@ -1,12 +1,8 @@
 import errors
 import logging
 import json
-import base64
 import urllib
-import Objects.UserObj as user_lib
-from google.appengine.ext import ndb
 from Crypto.Cipher import AES
-import webapp2
 import urlparse
 
 def validate_data(request):
@@ -88,25 +84,24 @@ def dictionarize(obj):
         result[key] = element
     return result
 
-
 def process_cookie(request, response):
-    cookie_value = request.cookies.get('FDUP')
-
-    if cookie_value:
-        user_id = decrypt(str(cookie_value))
-        key = ndb.Key(user_lib.UserModel, int(user_id))
-        ent = key.get()
-        if ent:
-            temp_user = user_lib.User(username=ent.username, password=ent.password, ID=str(user_id),
-                                      profile=json.loads(ent.profile))
-            return True, temp_user
-        else:
-            response.status = 401
-            return False, None
+    user_id = get_user(request, response)
+    # TODO: checks if this user_id exists in the database
+    user_exist = True
+    if user_exist:
+        return True
     else:
         response.status = 401
-        return False, None
+        return False
 
+def get_user(request, response):
+    cookie_value = request.cookies.get('FDUP')
+    if cookie_value:
+        user_id = decrypt(str(cookie_value))
+    else:
+        user_id = None
+        response.status = 401
+    return user_id
 
 def generate_json(request, uid, method, data, error):
     url_string = str(request.url)
