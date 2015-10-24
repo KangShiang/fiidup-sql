@@ -123,16 +123,16 @@ def get_restaurant(handler, id, params):
 def post_restaurant(handler, id, params):
     data = None
     error = None
+    cursor = fiidup_sql.db.cursor()
     if id:
-        handler.response.out.write("Post to restaurant " + "when id = " + id + " and Param =" + str(params))
+        error = "Key specified for a POST request"
+        handler.response.status = 403
     else:
-        cursor = fiidup_sql.db.cursor()
         try:
             query = fiidup_sql.get_insert_query_string("restaurant", params)
             cursor.execute(query)
             fiidup_sql.db.commit()
             data = params
-            return data, error
         except MySQLdb.Error, e:
             try:
                 logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
@@ -141,10 +141,10 @@ def post_restaurant(handler, id, params):
                 logging.error("MySQL Error: %s" % str(e))
                 error = "MySQL Error: %s" % str(e)
             handler.response.status = 403
-            return None, error
-        cursor.close()
+    cursor.close()
+    return data, error
 
-def delete_restaurant(handler, id):
+def delete_restaurant(handler, id, params):
     logging.info(id)
     data = None
     error = None
