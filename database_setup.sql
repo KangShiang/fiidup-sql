@@ -3,8 +3,39 @@
 --# database with all necessary tables and constraints  #--
 --#######################################################--
 
+-- ###### TABLES FOR USERS ###### --
+CREATE TABLE IF NOT EXISTS person
+(
+user_id int NOT NULL AUTO_INCREMENT,
+username text NOT NULL,
+password text NOT NULL,
+profile text NOT NULL,
+fiider_count int DEFAULT 0,
+fiiding_count int DEFAULT 0,
+post_count int DEFAULT 0,
+profile_pic_url text,
+background_pic_url text,
+PRIMARY KEY (user_id)
+);
+
+CREATE TABLE IF NOT EXISTS following
+(
+user_id int NOT NULL,
+following text,
+PRIMARY KEY (user_id),
+FOREIGN KEY (user_id) REFERENCES person(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS follower
+(
+user_id int NOT NULL,
+follower text,
+PRIMARY KEY (user_id),
+FOREIGN KEY (user_id) REFERENCES person(user_id)
+);
+
 -- ###### TABLES FOR DISHES ###### --
-CREATE TABLE IF NOT EXISTS dish2
+CREATE TABLE IF NOT EXISTS dish
 (
 dish_id int NOT NULL AUTO_INCREMENT,
 dish_name text NOT NULL,
@@ -23,42 +54,42 @@ keep_count int DEFAULT 0,
 PRIMARY KEY (dish_id)
 );
 
-CREATE TABLE IF NOT EXISTS comment2
+CREATE TABLE IF NOT EXISTS comment
 (
 comment_id int NOT NULL AUTO_INCREMENT,
 dish_id int NOT NULL,
 comment text NOT NULL,
 user_id text NOT NULL,
 PRIMARY KEY (comment_id),
-FOREIGN KEY (dish_id) REFERENCES dish2(dish_id) ON DELETE CASCADE
+FOREIGN KEY (dish_id) REFERENCES dish(dish_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS dish_keep2
+CREATE TABLE IF NOT EXISTS dish_keep
 (
 dish_id int NOT NULL,
-user_id text NOT NULL,
+user_id text,
 PRIMARY KEY (dish_id),
-FOREIGN KEY (dish_id) REFERENCES dish2(dish_id) ON DELETE CASCADE
+FOREIGN KEY (dish_id) REFERENCES dish(dish_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS dish_like2
+CREATE TABLE IF NOT EXISTS dish_like
 (
 dish_id int NOT NULL,
-user_id text NOT NULL,
+user_id text,
 PRIMARY KEY (dish_id),
-FOREIGN KEY (dish_id) REFERENCES dish2(dish_id) ON DELETE CASCADE
+FOREIGN KEY (dish_id) REFERENCES dish(dish_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS dish_tasted2
+CREATE TABLE IF NOT EXISTS dish_tasted
 (
 dish_id int NOT NULL,
-user_id text NOT NULL,
+user_id text,
 PRIMARY KEY (dish_id),
-FOREIGN KEY (dish_id) REFERENCES dish2(dish_id) ON DELETE CASCADE
+FOREIGN KEY (dish_id) REFERENCES dish(dish_id) ON DELETE CASCADE
 );
 
 -- ###### TABLES FOR RESTAURANTS ###### --
-CREATE TABLE IF NOT EXISTS restaurant2
+CREATE TABLE IF NOT EXISTS restaurant
 (
 restaurant_id int NOT NULL AUTO_INCREMENT,
 restaurant_name text NOT NULL,
@@ -71,62 +102,69 @@ keep_count int DEFAULT 0,
 PRIMARY KEY (restaurant_id)
 );
 
-CREATE TABLE IF NOT EXISTS review2
+CREATE TABLE IF NOT EXISTS review
 (
 review_id int NOT NULL AUTO_INCREMENT,
 restaurant_id int NOT NULL,
 user_id text NOT NULL,
 review text NOT NULL,
 PRIMARY KEY (review_id),
-FOREIGN KEY (restaurant_id) REFERENCES restaurant2(restaurant_id) ON DELETE CASCADE
+FOREIGN KEY (restaurant_id) REFERENCES restaurant(restaurant_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS restaurant_keep2
+CREATE TABLE IF NOT EXISTS restaurant_keep
 (
 restaurant_id int NOT NULL,
-user_id text NOT NULL,
+user_id text,
 PRIMARY KEY (restaurant_id),
-FOREIGN KEY (restaurant_id) REFERENCES restaurant2(restaurant_id) ON DELETE CASCADE
+FOREIGN KEY (restaurant_id) REFERENCES restaurant(restaurant_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS restaurant_like2
+CREATE TABLE IF NOT EXISTS restaurant_like
 (
 restaurant_id int NOT NULL,
-user_id text NOT NULL,
+user_id text,
 PRIMARY KEY (restaurant_id),
-FOREIGN KEY (restaurant_id) REFERENCES restaurant2(restaurant_id) ON DELETE CASCADE
+FOREIGN KEY (restaurant_id) REFERENCES restaurant(restaurant_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS restaurant_visited2
+CREATE TABLE IF NOT EXISTS restaurant_visited
 (
 restaurant_id int NOT NULL,
-user_id text NOT NULL,
+user_id text,
 PRIMARY KEY (restaurant_id),
-FOREIGN KEY (restaurant_id) REFERENCES restaurant2(restaurant_id) ON DELETE CASCADE
+FOREIGN KEY (restaurant_id) REFERENCES restaurant(restaurant_id) ON DELETE CASCADE
 );
 
 -- ###### TRIGGERS ###### --
+-- A trigger to insert the user_id into other tables associated with user
+DELIMITER |
+CREATE TRIGGER user_updater
+AFTER INSERT ON `person` FOR EACH ROW
+BEGIN
+INSERT INTO following(user_id) VALUES (NEW.user_id);
+INSERT INTO follower(user_id) VALUES (NEW.user_id);
+END |
+DELIMITER ;
 
 -- A trigger to insert the dish_id into other tables associated with dish
 DELIMITER |
 CREATE TRIGGER dish_updater
-AFTER INSERT ON `dish2` FOR EACH ROW
+AFTER INSERT ON `dish` FOR EACH ROW
 BEGIN
-INSERT INTO comment2(dish_id) VALUES (NEW.dish_id);
-INSERT INTO dish_keep2(dish_id) VALUES (NEW.dish_id);
-INSERT INTO dish_like2(dish_id) VALUES (NEW.dish_id);
-INSERT INTO dish_tasted2(dish_id) VALUES (NEW.dish_id);
+INSERT INTO dish_keep(dish_id) VALUES (NEW.dish_id);
+INSERT INTO dish_like(dish_id) VALUES (NEW.dish_id);
+INSERT INTO dish_tasted(dish_id) VALUES (NEW.dish_id);
 END |
 DELIMITER ;
 
 -- A trigger to insert the restaurant_id into other tables associated with restaurant
 DELIMITER |
 CREATE TRIGGER restaurant_updater
-AFTER INSERT ON `restaurant2` FOR EACH ROW
+AFTER INSERT ON `restaurant` FOR EACH ROW
 BEGIN
-INSERT INTO review2(restaurant_id) VALUES (NEW.restaurant_id);
-INSERT INTO restaurant_keep2(restaurant_id) VALUES (NEW.restaurant_id);
-INSERT INTO restaurant_like2(restaurant_id) VALUES (NEW.restaurant_id);
-INSERT INTO restaurant_visited2(restaurant_id) VALUES (NEW.restaurant_id);
+INSERT INTO restaurant_keep(restaurant_id) VALUES (NEW.restaurant_id);
+INSERT INTO restaurant_like(restaurant_id) VALUES (NEW.restaurant_id);
+INSERT INTO restaurant_visited(restaurant_id) VALUES (NEW.restaurant_id);
 END |
 DELIMITER ;
