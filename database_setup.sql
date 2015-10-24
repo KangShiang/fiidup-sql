@@ -148,10 +148,15 @@ END |
 DELIMITER ;
 
 -- A trigger to insert the dish_id into other tables associated with dish
+DROP TRIGGER IF EXISTS dish_updater;
+
 DELIMITER |
 CREATE TRIGGER dish_updater
 AFTER INSERT ON `dish` FOR EACH ROW
 BEGIN
+AFTER INSERT ON dish FOR EACH ROW
+BEGIN
+INSERT INTO comment(dish_id) VALUES (NEW.dish_id);
 INSERT INTO dish_keep(dish_id) VALUES (NEW.dish_id);
 INSERT INTO dish_like(dish_id) VALUES (NEW.dish_id);
 INSERT INTO dish_tasted(dish_id) VALUES (NEW.dish_id);
@@ -159,10 +164,15 @@ END |
 DELIMITER ;
 
 -- A trigger to insert the restaurant_id into other tables associated with restaurant
+DROP TRIGGER IF EXISTS restaurant_updater;
+
 DELIMITER |
 CREATE TRIGGER restaurant_updater
 AFTER INSERT ON `restaurant` FOR EACH ROW
 BEGIN
+AFTER INSERT ON restaurant FOR EACH ROW
+BEGIN
+INSERT INTO review(restaurant_id) VALUES (NEW.restaurant_id);
 INSERT INTO restaurant_keep(restaurant_id) VALUES (NEW.restaurant_id);
 INSERT INTO restaurant_like(restaurant_id) VALUES (NEW.restaurant_id);
 INSERT INTO restaurant_visited(restaurant_id) VALUES (NEW.restaurant_id);
