@@ -5,8 +5,10 @@ import urllib
 from Crypto.Cipher import AES
 import urlparse
 
+FIIDUP_COOKIE = 'FDUP'
+
 def parse_request(request):
-    url_string = str(self.request.url)
+    url_string = str(request.url)
     url_obj = urlparse.urlparse(url_string)
 
 def validate_data(request):
@@ -73,7 +75,7 @@ auth_secret_msg = 'AlexAbyxious1234'
 
 def encrypt(message):
     obj = AES.new(auth_secret_msg)
-    ciphertext = obj.encrypt(message)
+    ciphertext = obj.encrypt(str(message).zfill(16))
     return urllib.quote(str(ciphertext))
 
 
@@ -111,24 +113,17 @@ def dictionarize(obj):
         result[key] = element
     return result
 
-def process_cookie(request, response):
-    user_id = get_user(request, response)
-    # TODO: checks if this user_id exists in the database
-    user_exist = True
-    if user_exist:
-        return True
-    else:
-        response.status = 401
-        return False
-
-def get_user(request, response):
-    cookie_value = request.cookies.get('FDUP')
+def process_cookie(request):
+    user_id = None
+    authenticated = False
+    cookie_value = request.cookies.get(FIIDUP_COOKIE)
     if cookie_value:
-        user_id = decrypt(str(cookie_value))
-    else:
-        user_id = None
-        response.status = 401
-    return user_id
+        user_id = int(decrypt(str(cookie_value)))
+        # TODO: checks if this user_id exists in the database
+        user_exist = True
+        if user_id:
+            authenticated = True
+    return authenticated, user_id
 
 def generate_json(request, uid, method, data, error):
     url_string = str(request.url)
@@ -149,4 +144,3 @@ def generate_json(request, uid, method, data, error):
     }
     logging.info(json.dumps(dictionary))
     return json.dumps(dictionary)
-
