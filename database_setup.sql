@@ -7,9 +7,9 @@
 CREATE TABLE IF NOT EXISTS person
 (
 user_id int NOT NULL AUTO_INCREMENT,
-username text NOT NULL,
+username varchar(255) NOT NULL UNIQUE,
 password text NOT NULL,
-profile text NOT NULL,
+email varchar(255) NOT NULL UNIQUE,
 fiider_count int DEFAULT 0,
 fiiding_count int DEFAULT 0,
 post_count int DEFAULT 0,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS following
 user_id int NOT NULL,
 following text,
 PRIMARY KEY (user_id),
-FOREIGN KEY (user_id) REFERENCES person(user_id)
+FOREIGN KEY (user_id) REFERENCES person(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS follower
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS follower
 user_id int NOT NULL,
 follower text,
 PRIMARY KEY (user_id),
-FOREIGN KEY (user_id) REFERENCES person(user_id)
+FOREIGN KEY (user_id) REFERENCES person(user_id) ON DELETE CASCADE
 );
 
 -- ###### TABLES FOR DISHES ###### --
@@ -138,6 +138,8 @@ FOREIGN KEY (restaurant_id) REFERENCES restaurant(restaurant_id) ON DELETE CASCA
 
 -- ###### TRIGGERS ###### --
 -- A trigger to insert the user_id into other tables associated with user
+DROP TRIGGER IF EXISTS user_updater;
+
 DELIMITER |
 CREATE TRIGGER user_updater
 AFTER INSERT ON `person` FOR EACH ROW
