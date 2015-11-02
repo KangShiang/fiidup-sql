@@ -49,7 +49,6 @@ def get_retrieve_query_string(table, params=None, cond=None, limit=None):
     limit if specified, indicates the LIMIT in integer, default None
     eg: cond = {'dish_name': 'Cake', 'like_count': 0, 'dish_id': [123, 345]}
     """
-    logging.info(params)
     query = "SELECT "
     if (params is None) or len(params) == 0:
         if table == "dish" or table == "restaurant":
@@ -167,7 +166,7 @@ def get_modify_query_string(table, params, primary_key, id):
                     query = query + key + "=" + value + ", "
                 else:
                     query = query + key + "='" + value + "', "
-    query = query[:-2] + " where " + primary_key + "=" + id + ";"
+    query = query[:-2] + " where " + primary_key + "=" + str(id) + ";"
     logging.info(query)
     return query
 
@@ -193,3 +192,15 @@ def get_column_names(table):
 
 def get_last_inserted_pkey(cursor):
     return cursor.lastrowid
+
+def get_sql_error(e):
+    try:
+        logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
+        if e.args[0] == 1054:
+            error = "Invalid Argument"
+        else:
+            error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+    except IndexError:
+        logging.error("MySQL Error: %s" % str(e))
+        error = "MySQL Error: %s" % str(e)
+    return error
