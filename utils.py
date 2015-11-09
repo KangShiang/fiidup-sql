@@ -14,15 +14,17 @@ def parse_request(request):
 def validate_data(request):
     dictionary = {}
     logging.info(request.method)
+    content_type = request.headers['Content-Type'].split(';')[0]
+    logging.info(content_type)
     if request.method == 'POST' or request.method == 'PUT':
-        if "json" in request.headers['Content-Type'] or request.headers['Content-Type'] == '':
+        if "json" in content_type:
             dictionary = json.loads(request.body)
             try:
                 dictionary["location"] = "GeomFromText('" + dictionary["location"] + "')"
             except KeyError:
                 pass
             logging.info("body:  %s", request.body)
-        elif "x-www-form-urlencoded" in request.headers['Content-Type']:
+        elif "x-www-form-urlencoded" in content_type:
             for key in request.params:
                 # if not request.get(key):
                 # error = errors.Error("data::Invalid Data")
@@ -32,6 +34,8 @@ def validate_data(request):
                     dictionary[key.lower()] = "GeomFromText('" + request.get(key) + "')"
                 else:
                     dictionary[key.lower()] = request.get(key)
+        elif not content_type:
+            return None, dictionary
         else:
             error = errors.Error("headers::Invalid Header:Content-Type")
             logging.error(error.message())
@@ -144,3 +148,9 @@ def generate_json(request, uid, method, data, error):
     }
     logging.info(json.dumps(dictionary))
     return json.dumps(dictionary)
+
+def fail_blacklist(blacklist, params):
+    for param in params:
+        if param in blacklist:
+            return True
+    return False

@@ -8,7 +8,7 @@ db = MySQLdb.connect(host='localhost', port=3306, db='fiidup_main', user='root',
 
 def is_int(x):
     try:
-        int(x)
+        float(x)
     except ValueError:
         return False
     return True
@@ -27,7 +27,7 @@ def get_insert_query_string(table, params):
     query += ") VALUES ("
     for x in values:
         if is_int(x):
-            query = query + x + ", "
+            query = query + str(x) + ", "
         else:
             if 'GeomFromText' in x:
                 query = query + x + ", "
@@ -170,13 +170,15 @@ def get_modify_query_string(table, params, primary_key, id):
     logging.info(query)
     return query
 
-def get_delete_query_string(table, primary_key, value):
+def get_delete_query_string(table, cond):
     """
     Function to generate a query string which deletes an entry in the table
-    based on the primary_key and the corresponding value
+    based on the given condition
     """
-    query = "DELETE FROM " + str(table)
-    query += " WHERE " + str(primary_key) + " = " + str(value)
+    query = "DELETE FROM %s WHERE" % table
+    for key, val in cond.iteritems():
+        query += " %s = %s AND" % (key, val)
+    query = query[:-4]
     logging.info(query)
     return query
 
@@ -204,3 +206,53 @@ def get_sql_error(e):
         logging.error("MySQL Error: %s" % str(e))
         error = "MySQL Error: %s" % str(e)
     return error
+
+def get_dish_get_query(limit, cond=None):
+    additional_params = ['username', 'profile_pic_url', 'restaurant_name']
+    query = 'SELECT dish.*'
+    for param in additional_params:
+        query += ', %s' % param
+    query += ' FROM dish INNER JOIN person ON'
+
+    if (cond is not None) and len(cond) > 0:
+        for key in cond.keys():
+            query += ' %s %s AND' % (key, cond[key])
+    query += ' dish.user_id=person.user_id'
+    query += ' INNER JOIN restaurant ON dish.restaurant_id=restaurant.restaurant_id'
+    query += ' ORDER BY posted_time DESC'
+    query += ' LIMIT %s' % limit
+    logging.info(query)
+    return query, additional_params
+
+def get_table_join_user_query(table, cond=None, limit=None):
+    additional_params = ['username', 'profile_pic_url']
+    query = 'SELECT %s.*' % table
+    for param in additional_params:
+        query += ', %s' % param
+    query += ' FROM %s INNER JOIN person ON' % table
+
+    if cond:
+        for key, val in cond.iteritems():
+            query += ' %s %s AND' % (key, val)
+    query += ' %s.user_id=person.user_id' % table
+    if table == 'comment':
+        query += ' ORDER BY posted_time DESC'
+    if limit:
+        query += ' LIMIT %s' % limit
+    logging.info(query)
+    return query, additional_params
+
+def get_follow_join_user_query(target_user, option):
+    option_available = ['follower', 'following']
+    if option not in option_available:
+        return None, None
+    additional_params = ['username', 'profile_pic_url']
+    query = 'SELECT follow.%s' % option
+    for param in additional_params:
+        query += ', %s' % param
+    query += ' FROM follow INNER JOIN person ON %s = %s' % (option_available[option_available.index(option) - 1],
+                                                            target_user)
+    query += ' AND follow.%s = person.user_id' % option
+    logging.info(query)
+    additional_params.insert(0, option)
+    return query, additional_params

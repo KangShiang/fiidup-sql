@@ -1,162 +1,99 @@
-import webapp2
 import MySQLdb
-import sql as fiidup_sql
-import logging
-import cgi
+import sql
+import time
+import utils
+from copy import deepcopy
 
-def put_dish(handler, id, params):
+def get_dish(handler, this_user, target_dish):
     data = None
     error = None
-    cursor = fiidup_sql.db.cursor()
-    if id:
-        try:
-            query_string = fiidup_sql.get_modify_query_string("dish", params, "dish_id", id)
-            cursor.execute(query_string)
-            fiidup_sql.db.commit()
-            data = params
-        except MySQLdb.Error, e:
-            try:
-                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
-                if e.args[0] == 1054:
-                    error = "Invalid Argument"
-                else:
-                    error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-            except IndexError:
-                logging.error("MySQL Error: %s" % str(e))
-                error = "MySQL Error: %s" % str(e)
-            handler.response.status = 403
+    count = 10
+    cursor = sql.db.cursor()
+    if target_dish:
+        condition = {"dish_id": '= %s' % target_dish}
+        query_string, extra_param = sql.get_dish_get_query(limit=1, cond=condition)
     else:
-        error = "ID not found"
+        condition = deepcopy(dict(handler.request.GET))
+        if 'count' in condition:
+            count = condition['count']
+            del condition['count']
+        query_string, extra_param = sql.get_dish_get_query(limit=count, cond=condition)
+    try:
+        cursor.execute(query_string)
+        data = []
+        keys = sql.get_column_names('dish')
+        keys.extend(extra_param)
+        for values in cursor.fetchall():
+            values = dict(zip(keys, values))
+            data.append(values)
+    except MySQLdb.Error, e:
+        error = sql.get_sql_error(e)
         handler.response.status = 403
     cursor.close()
-    return data, error
+    handler.response.out.write(utils.generate_json(handler.request, this_user, "GET", data, error))
 
-def get_dish(handler, id, params):
+def delete_dish(handler, this_user, target_dish):
+    data = None
     error = None
-    dish = None
-    cursor = fiidup_sql.db.cursor()
-    if id:
-        try:
-            condition = {"dish_id": id}
-            query_string = fiidup_sql.get_retrieve_query_string(table="dish", cond=condition, limit=1)
-            cursor.execute(query_string)
-            try:
-                values = cursor.fetchall()
-                new_values = []
-                for x in values:
-                    try:
-                        int(x)
-                        new_values.append(x)
-                    except ValueError:
-                        new_values.append(cgi.escape(x))
-                cursor.execute("DESCRIBE %s" % "dish;")
-                keys = [x[0] for x in cursor.fetchall()]
-                dish = dict(zip(keys, new_values))
-                logging.info(dish)
-            except IndexError:
-                pass
-        except MySQLdb.Error, e:
-            try:
-                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
-                if e.args[0] == 1054:
-                    error = "Invalid Argument"
-                else:
-                    error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-            except IndexError:
-                logging.error("MySQL Error: %s" % str(e))
-                error = "MySQL Error: %s" % str(e)
-            handler.response.status = 403
-    else:
-        if params.get("count"):
-            count = params.get("count")
-            del params['count']
+    cursor = sql.db.cursor()
+    try:
+        # check if the dish was posted by this user
+        condition = {"user_id": this_user, "dish_id": target_dish}
+        query_string = sql.get_retrieve_query_string(table="dish", cond=condition, limit=1)
+        cursor.execute(query_string)
+        if cursor.fetchall():
+            condition = {"dish_id": target_dish}
+            query = sql.get_delete_query_string('dish', condition)
+            cursor.execute(query)
+            sql.db.commit()
+            data = {'dish_id': target_dish}
         else:
-            count = 10
-        logging.info("GET DISH WITH COUNT", count)
-        try:
-            condition = params
-            query_string = fiidup_sql.get_retrieve_numeric_query_string(table="dish", cond=condition, limit=count)
+            handler.response.status = 401
+    except MySQLdb.Error, e:
+        error = sql.get_sql_error(e)
+        sql.db.rollback()
+        handler.response.status = 403
+    cursor.close()
+    handler.response.out.write(utils.generate_json(handler.request, this_user, "DELETE", data, error))
+
+def post_dish(handler, this_user, params):
+    data = None
+    error = None
+    cursor = sql.db.cursor()
+    try:
+        params['user_id'] = this_user
+        params['posted_time'] = float('%.2f' % time.time())
+        query = sql.get_insert_query_string("dish", params)
+        cursor.execute(query)
+        sql.db.commit()
+        data = params
+        data['dish_id'] = sql.get_last_inserted_pkey(cursor)
+    except MySQLdb.Error, e:
+        error = sql.get_sql_error(e)
+        sql.db.rollback()
+        handler.response.status = 403
+    cursor.close()
+    handler.response.out.write(utils.generate_json(handler.request, this_user, "POST", data, error))
+
+def put_dish(handler, this_user, target_dish, req_params):
+    data = None
+    error = None
+    cursor = sql.db.cursor()
+    try:
+        # check if the dish was posted by this user
+        condition = {"user_id": this_user, "dish_id": target_dish}
+        query_string = sql.get_retrieve_query_string(table="dish", cond=condition, limit=1)
+        cursor.execute(query_string)
+        if cursor.fetchall():
+            query_string = sql.get_modify_query_string("dish", req_params, "dish_id", target_dish)
             cursor.execute(query_string)
-            try:
-                values = cursor.fetchall()
-                cursor.execute("DESCRIBE %s" % "dish;")
-                keys = [x[0] for x in cursor.fetchall()]
-                logging.info(values)
-                dish_list = []
-                for list in values:
-                    new_values = []
-                    for x in list:
-                        try:
-                            int(x)
-                            new_values.append(x)
-                        except ValueError:
-                            new_values.append(cgi.escape(x))
-                    dish = dict(zip(keys, new_values))
-                    dish_list.append(dish)
-                logging.info(dish_list)
-                dish = dish_list
-            except IndexError:
-                pass
-        except MySQLdb.Error, e:
-            try:
-                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
-                if e.args[0] == 1054:
-                    error = "Invalid Argument"
-                else:
-                    error = "Invalid Syntax"
-            except IndexError:
-                logging.error("MySQL Error: %s" % str(e))
-                error = "MySQL Error: %s" % str(e)
-            handler.response.status = 403
-    cursor.close()
-    return dish, error
-
-def post_dish(handler, id, params):
-    data = None
-    error = None
-    cursor = fiidup_sql.db.cursor()
-    if id:
-        error = "Key specified for a POST request"
-        handler.response.status = 403
-    else:
-        try:
-            query = fiidup_sql.get_insert_query_string("dish", params)
-            cursor.execute(query)
-            fiidup_sql.db.commit()
-            data = params
-        except MySQLdb.Error, e:
-            try:
-                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
-                error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-            except IndexError:
-                logging.error("MySQL Error: %s" % str(e))
-                error = "MySQL Error: %s" % str(e)
-            handler.response.status = 403
-    cursor.close()
-    return data, error
-
-def delete_dish(handler, id, params):
-    # id represents dish_id
-    data = None
-    error = None
-    cursor = fiidup_sql.db.cursor()
-    if id:
-        try:
-            query = fiidup_sql.get_delete_query_string('dish', 'dish_id', id)
-            cursor.execute(query)
-            fiidup_sql.db.commit()
-            data = {'dish_id': id}
-        except MySQLdb.Error, e:
-            try:
-                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
-                error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-            except IndexError:
-                logging.error("MySQL Error: %s" % str(e))
-                error = "MySQL Error: %s" % str(e)
-            fiidup_sql.db.rollback()
-            handler.response.status = 403
-    else:
-        error = "Key not found"
+            sql.db.commit()
+            data = req_params
+        else:
+            handler.response.status = 401
+    except MySQLdb.Error, e:
+        error = sql.get_sql_error(e)
+        sql.db.rollback()
         handler.response.status = 403
     cursor.close()
-    return data, error
+    handler.response.out.write(utils.generate_json(handler.request, this_user, "PUT", data, error))

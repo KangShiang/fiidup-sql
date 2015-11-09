@@ -1,7 +1,6 @@
 import sql
 import utils
 import MySQLdb
-import logging
 
 def get_user(handler, this_user, target_user):
     data = None
@@ -11,14 +10,10 @@ def get_user(handler, this_user, target_user):
         condition = {"user_id": target_user}
         query_string = sql.get_retrieve_query_string(table="person", cond=condition)
         cursor.execute(query_string)
+        keys = sql.get_column_names('person')
         for values in cursor.fetchall():
-            new_values = []
-            for x in values:
-                new_values.append(x)
-            keys = sql.get_column_names('person')
-            data = dict(zip(keys, new_values))
+            data = dict(zip(keys, values))
             del data['password']
-            logging.info(data)
     except MySQLdb.Error, e:
         error = sql.get_sql_error(e)
         handler.response.status = 403
@@ -39,6 +34,7 @@ def put_user(handler, this_user, params):
         data = params
     except MySQLdb.Error, e:
         error = sql.get_sql_error(e)
+        sql.db.rollback()
         handler.response.status = 403
     cursor.close()
     handler.response.out.write(utils.generate_json(handler.request, this_user, "PUT", data, error))
@@ -66,7 +62,8 @@ def delete_user(handler, this_user):
     error = None
     cursor = sql.db.cursor()
     try:
-        query = sql.get_delete_query_string('person', 'user_id', this_user)
+        condition = {'user_id': this_user}
+        query = sql.get_delete_query_string('person', condition)
         cursor.execute(query)
         sql.db.commit()
         data = {'user_id': this_user,

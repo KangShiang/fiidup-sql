@@ -44,8 +44,8 @@ class Restaurant(webapp2.RequestHandler):
 
         if num_layers == 2:
             data, error = restaurantHandler.get_restaurant(self, None, req_params)
-        elif num_layers == 3 :
-            if not req_params.:
+        elif num_layers == 3:
+            if not req_params:
                 # Handle the case when the url is /restaurant/<id>
                 int(last_dir_string)
                 data, error = restaurantHandler.get_restaurant(self, last_dir_string, req_params)

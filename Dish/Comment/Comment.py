@@ -1,109 +1,86 @@
 import MySQLdb
 import sql
-import logging
+import utils
+import time
+from copy import deepcopy
 
-def delete_comment(handler, id, params):
-    # id represents comment_id
+def get_comment(handler, this_user, target_dish):
     data = None
     error = None
+    count = 10
     cursor = sql.db.cursor()
-    if id:
-        try:
-            query = sql.get_delete_query_string('comment', 'comment_id', id)
-            cursor.execute(query)
-            # decrement comment_count in dish table
-            param = {'comment_count': 'comment_count - 1'}
-            query = sql.get_modify_query_string(table='dish', params=param, primary_key='dish_id', id=id)
-            cursor.execute(query)
-            sql.db.commit()
-            data = {'comment_id': id}
-        except MySQLdb.Error, e:
-            try:
-                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
-                error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-            except IndexError:
-                logging.error("MySQL Error: %s" % str(e))
-                error = "MySQL Error: %s" % str(e)
-            sql.db.rollback()
-            handler.response.status = 403
-    else:
-        error = "Key not found"
+    condition = deepcopy(dict(handler.request.GET))
+    if 'count' in condition:
+        count = condition['count']
+        del condition['count']
+    condition['dish_id'] = '= %s' % target_dish
+    query_string, extra_param = sql.get_table_join_user_query('comment', cond=condition, limit=count)
+    try:
+        cursor.execute(query_string)
+        data = []
+        keys = sql.get_column_names('comment')
+        keys.extend(extra_param)
+        for values in cursor.fetchall():
+            values = dict(zip(keys, values))
+            data.append(values)
+    except MySQLdb.Error, e:
+        error = sql.get_sql_error(e)
         handler.response.status = 403
     cursor.close()
-    return data, error
+    handler.response.out.write(utils.generate_json(handler.request, this_user, "GET", data, error))
 
-def get_comment(handler, id, params):
-    # id represents dish_id
+def delete_comment(handler, this_user, target_dish, target_comment=None):
     data = None
     error = None
     cursor = sql.db.cursor()
-    if id:
-        try:
-            cond = {'dish_id': str(id)}
-            query = sql.get_retrieve_query_string(table='comment', cond=cond)
-            cursor.execute(query)
-            try:
-                datalist = cursor.fetchall()
-                data = []
-                keys = sql.get_column_names('comment')
-                for x in datalist:
-                    x = dict(zip(keys, x))
-                    data.append(x)
-            except IndexError:
-                data = []
-        except MySQLdb.Error, e:
-            try:
-                logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
-                error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-            except IndexError:
-                logging.error("MySQL Error: %s" % str(e))
-                error = "MySQL Error: %s" % str(e)
-            handler.response.status = 403
-    else:
-        error = "ID not found"
+    if not target_comment:
+        error = 'Comment to be deleted is not specified'
         handler.response.status = 403
-    cursor.close()
-    logging.info(data)
-    return data, error
-
-'''
-Returns the comment_id
-'''
-def post_comment(handler, id, params):
-    # id represents dish_id
-    # input params should have the comment string and user_id of the user who posts the comment
-    data = None
-    error = None
-    cursor = sql.db.cursor()
-    if id:
-        # extract only necessary info
-        user_id = params.get('user_id')
-        comment = params.get('comment')
-        dict = {'dish_id': id, 'user_id': user_id, 'comment': comment}
-        if (user_id is None) or (comment is None):
-            error = "Insufficient info to post comment"
-            handler.response.status = 403
-        else:
-            try:
-                query = sql.get_insert_query_string('comment', dict)
+    else:
+        try:
+            # check if the comment was posted by this user for the dish
+            condition = {"comment_id": target_comment, "dish_id": target_dish, "user_id": this_user}
+            query_string = sql.get_retrieve_query_string(table="comment", cond=condition, limit=1)
+            cursor.execute(query_string)
+            if cursor.fetchall():
+                condition = {"comment_id": target_comment}
+                query = sql.get_delete_query_string('comment', condition)
                 cursor.execute(query)
-                # increment comment_count in dish table
-                param = {'comment_count': 'comment_count + 1'}
-                query = sql.get_modify_query_string(table='dish', params=param, primary_key='dish_id', id=id)
+                # decrement comment_count in dish table
+                param = {'comment_count': 'comment_count - 1'}
+                query = sql.get_modify_query_string(table='dish', params=param, primary_key='dish_id', id=target_dish)
                 cursor.execute(query)
                 sql.db.commit()
-                data = {'comment_id': sql.get_last_inserted_pkey(cursor)}
-            except MySQLdb.Error, e:
-                try:
-                    logging.error("MySQL Error [%d]: %s" % (e.args[0], e.args[1]))
-                    error = "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-                except IndexError:
-                    logging.error("MySQL Error: %s" % str(e))
-                    error = "MySQL Error: %s" % str(e)
-                sql.db.rollback()
-                handler.response.status = 403
-    else:
-        error = "ID not found"
+                data = {'comment_id': target_comment}
+            else:
+                handler.response.status = 401
+        except MySQLdb.Error, e:
+            error = sql.get_sql_error(e)
+            sql.db.rollback()
+            handler.response.status = 403
+    cursor.close()
+    handler.response.out.write(utils.generate_json(handler.request, this_user, "DELETE", data, error))
+
+def post_comment(handler, this_user, target_dish, req_params):
+    data = None
+    error = None
+    cursor = sql.db.cursor()
+    try:
+        req_params['dish_id'] = target_dish
+        req_params['user_id'] = this_user
+        req_params['posted_time'] = float('%.2f' % time.time())
+        query = sql.get_insert_query_string('comment', req_params)
+        cursor.execute(query)
+        data = req_params
+        data['comment_id'] = sql.get_last_inserted_pkey(cursor)
+        # increment comment_count in dish table
+        param = {'comment_count': 'comment_count + 1'}
+        query = sql.get_modify_query_string(table='dish', params=param, primary_key='dish_id', id=target_dish)
+        cursor.execute(query)
+        sql.db.commit()
+    except MySQLdb.Error, e:
+        error = sql.get_sql_error(e)
+        sql.db.rollback()
         handler.response.status = 403
     cursor.close()
-    return data, error
+    handler.response.out.write(utils.generate_json(handler.request, this_user, "POST", data, error))

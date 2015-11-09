@@ -2,197 +2,168 @@ import webapp2
 import utils
 import urlparse
 import dishHandler
-import logging
-import sql as fiidup_sql
 from Comment import Comment as commentHandler
 from Like import Like as likeHandler
 from Tasted import Tasted as tastedHandler
 from Keep import Keep as keepHandler
-
-put_sub_routes = {"PUT_like": "put_like",
-                  "PUT_tasted": "put_tasted",
-                  "PUT_keep": "put_keep"}
 
 get_sub_routes = {"GET_comment": "get_comment",
                   "GET_like": "get_like",
                   "GET_tasted": "get_tasted",
                   "GET_keep": "get_keep"}
 
-post_sub_routes = {"POST_comment": "post_comment"}
+post_sub_routes = {"POST_comment": "post_comment",
+                   "POST_like": "post_like",
+                   "POST_tasted": "post_tasted",
+                   "POST_keep": "post_keep"}
 
-delete_sub_routes = {"DELETE_comment": "delete_comment"}
+delete_sub_routes = {"DELETE_comment": "delete_comment",
+                     "DELETE_like": "delete_like",
+                     "DELETE_tasted": "delete_tasted",
+                     "DELETE_keep": "delete_keep"}
 
-# TODO: when a dish is added, automatically insert an entry in dish_keep, dish)like, and dish_tasted
-# TODO: when a dish is removed. delete the entry from corresponding tables
 class Dish(webapp2.RequestHandler):
+    POST_BLACKLIST = ['dish_id', 'user_id', 'posted_time', 'like_count', 'comment_count',
+                      'tasted_count', 'keep_count', 'comment_id']
+    PUT_BLACKLIST = ['dish_id', 'user_id', 'url', 'posted_time', 'like_count', 'comment_count',
+                     'tasted_count', 'keep_count']
+
     def get(self):
-        data = None
-        error = None
-        err, req_params = utils.validate_data(self.request)
-        if err:
-            self.response.out.write(err.message())
+        authenticated, this_user = utils.process_cookie(self.request)
+        if not authenticated:
+            self.response.status = 401
             return
 
-        url_string = str(self.request.url)
-        url_obj = urlparse.urlparse(url_string)
-        # str.split returns a list of strings. Google search python str.split for more detail.
+        url_obj = urlparse.urlparse(str(self.request.url))
         subdirs = str(url_obj.path).split('/')
-        # Last element in the url
-        last_dir_string = str(subdirs[len(subdirs)-1])
         num_layers = len(subdirs)
+        last_dir_string = str(subdirs[len(subdirs)-1])
 
         if num_layers == 2:
-            data, error = dishHandler.get_dish(self, None, req_params)
+            dishHandler.get_dish(self, this_user, None)
         elif num_layers == 3:
             try:
-                # Handle the case when the url is /dish/<id>
-                int(last_dir_string)
-                data, error = dishHandler.get_dish(self, last_dir_string, req_params)
-                logging.info(data)
-                logging.info(error)
-
+                target_dish = int(last_dir_string)
+                dishHandler.get_dish(self, this_user, target_dish)
             except ValueError:
-                try:
-                    subdir_string = str(subdirs[2])
-                    handling_function = get_sub_routes["GET_" + subdir_string]
-                    data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
-                except KeyError:
-                    self.response.status = 405
-
+                self.response.status = 405
         elif num_layers == 4:
             try:
-                # Handle the case when the url is /dish/<info>:id
-                int(last_dir_string)
-                subdir_string = str(subdirs[2])
+                target_dish = int(subdirs[2])
+                subdir_string = str(last_dir_string)
                 handling_function = get_sub_routes["GET_" + subdir_string]
-                data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
-                # Return info of a specific dish
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self, this_user, target_dish)
+            except ValueError:
+                self.response.status = 405
             except KeyError:
                 self.response.status = 405
-
         else:
             self.response.status = 405
-        self.response.out.write(utils.generate_json(self.request, 123, "GET", data, error))
-
 
     def post(self):
-        # TODO: remove comment
-        '''
-        authenticated, user = utils.process_cookie(self.request, self.response)
+        authenticated, this_user = utils.process_cookie(self.request)
         if not authenticated:
+            self.response.status = 401
             return
-'''
-        data = None
-        error = None
 
         err, req_params = utils.validate_data(self.request)
         if err:
-            self.response.out.write(err.message())
+            self.response.out.write(utils.generate_json(self.request, this_user, "POST", None, err.message()))
+            self.response.status = 403
             return
 
-        url_string = str(self.request.url)
-        url_obj = urlparse.urlparse(url_string)
-        # str.split returns a list of strings. Google search python str.split for more detail.
-        subdirs = str(url_obj.path).split('/')
-        # Last element in the url
-        last_dir_string = str(subdirs[len(subdirs)-1])
-        num_layers = len(subdirs)
+        if utils.fail_blacklist(self.POST_BLACKLIST, req_params):
+            error = 'Invalid data in body'
+            self.response.out.write(utils.generate_json(self.request, this_user, "POST", None, error))
+            self.response.status = 403
+            return
 
-        # Only Handle the case of /dish
-        if num_layers == 2 and last_dir_string == "dish":
-            data, error = dishHandler.post_dish(self, None, req_params)
-        elif num_layers == 3:
-            try:
-                subdir_string = str(subdirs[2])
-                handling_function = post_sub_routes["POST_" + subdir_string]
-                data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, None, req_params)
-            except KeyError:
-                self.response.status = 405
+        url_obj = urlparse.urlparse(str(self.request.url))
+        subdirs = str(url_obj.path).split('/')
+        num_layers = len(subdirs)
+        last_dir_string = str(subdirs[len(subdirs)-1])
+
+        if num_layers == 2:
+            dishHandler.post_dish(self, this_user, req_params)
         elif num_layers == 4:
             try:
-                subdir_string = str(subdirs[2])
+                target_dish = int(subdirs[2])
+                subdir_string = str(last_dir_string)
                 handling_function = post_sub_routes["POST_" + subdir_string]
-                data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self, this_user, target_dish,
+                                                                                 req_params)
+            except ValueError:
+                self.response.status = 405
             except KeyError:
                 self.response.status = 405
         else:
             self.response.status = 405
-        self.response.out.write(utils.generate_json(self.request, 123, "POST", data, error))
 
     def put(self):
-        data = None
-        error = None
-        # TODO: remove comment
-        #authenticated, user = utils.process_cookie(self.request, self.response)
-        # if not authenticated:
-        #     return
-        err, req_params = utils.validate_data(self.request)
-        if err:
-            self.response.out.write(err.message())
+        authenticated, this_user = utils.process_cookie(self.request)
+        if not authenticated:
+            self.response.status = 401
             return
 
-        url_string = str(self.request.url)
-        url_obj = urlparse.urlparse(url_string)
-        # str.split returns a list of strings. Google search python str.split for more detail.
-        subdirs = str(url_obj.path).split('/')
-        # Last element in the url
-        last_dir_string = str(subdirs[len(subdirs)-1])
-        num_layers = len(subdirs)
-
-        try:
-            int(last_dir_string)
-        except ValueError:
-            error = "ID not found"
+        err, req_params = utils.validate_data(self.request)
+        if err:
+            self.response.out.write(utils.generate_json(self.request, this_user, "PUT", None, err.message()))
             self.response.status = 403
+            return
+
+        if utils.fail_blacklist(self.PUT_BLACKLIST, req_params):
+            error = 'Invalid data in body'
+            self.response.out.write(utils.generate_json(self.request, this_user, "PUT", None, error))
+            self.response.status = 403
+            return
+
+        url_obj = urlparse.urlparse(str(self.request.url))
+        subdirs = str(url_obj.path).split('/')
+        num_layers = len(subdirs)
+        last_dir_string = str(subdirs[len(subdirs)-1])
 
         if num_layers == 3:
-            data, error = dishHandler.put_dish(self, last_dir_string, req_params)
-        elif num_layers == 4:
             try:
-                subdir_string = str(subdirs[2])
-                handling_function = put_sub_routes["PUT_" + subdir_string]
-                data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
-            except KeyError:
+                target_dish = int(last_dir_string)
+                dishHandler.put_dish(self, this_user, target_dish, req_params)
+            except ValueError:
                 self.response.status = 405
         else:
             self.response.status = 405
-        self.response.out.write(utils.generate_json(self.request, 123, "PUT", data, error))
 
     def delete(self):
-        data = None
-        error = None
-        # TODO: remove comment
-        #authenticated, user = utils.process_cookie(self.request, self.response)
-        # if not authenticated:
-        #     return
-        err, req_params = utils.validate_data(self.request)
-        if err:
-            self.response.out.write(err.message())
+        authenticated, this_user = utils.process_cookie(self.request)
+        if not authenticated:
+            self.response.status = 401
             return
 
-        url_string = str(self.request.url)
-        url_obj = urlparse.urlparse(url_string)
-        # str.split returns a list of strings. Google search python str.split for more detail.
+        url_obj = urlparse.urlparse(str(self.request.url))
         subdirs = str(url_obj.path).split('/')
-        # Last element in the url
-        last_dir_string = str(subdirs[len(subdirs)-1])
         num_layers = len(subdirs)
-
-        try:
-            int(last_dir_string)
-        except ValueError:
-            error = "ID not found"
-            self.response.status = 403
+        last_dir_string = str(subdirs[len(subdirs)-1])
 
         if num_layers == 3:
-            data, error = dishHandler.delete_dish(self, last_dir_string, req_params)
+            try:
+                target_dish = int(last_dir_string)
+                dishHandler.delete_dish(self, this_user, target_dish)
+            except ValueError:
+                self.response.status = 405
         elif num_layers == 4:
             try:
-                subdir_string = str(subdirs[2])
+                target_dish = int(subdirs[2])
+                subdir_string = str(last_dir_string)
                 handling_function = delete_sub_routes["DELETE_" + subdir_string]
-                data, error = getattr(globals()[subdir_string + "Handler"], handling_function)(self, last_dir_string, req_params)
+                getattr(globals()[subdir_string + "Handler"], handling_function)(self, this_user, target_dish)
+            except ValueError:
+                self.response.status = 405
             except KeyError:
+                self.response.status = 405
+        elif num_layers == 5 and subdirs[3] == 'comment':
+            try:
+                target_dish = int(subdirs[2])
+                target_comment = int(last_dir_string)
+                commentHandler.delete_comment(self, this_user, target_dish, target_comment)
+            except ValueError:
                 self.response.status = 405
         else:
             self.response.status = 405
-        self.response.out.write(utils.generate_json(self.request, 123, "DELETE", data, error))

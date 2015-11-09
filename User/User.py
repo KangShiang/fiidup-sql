@@ -13,6 +13,9 @@ get_sub_routes = {"GET_follower": "get_follower",
 delete_sub_routes = {"DELETE_following": "delete_following"}
 
 class User(webapp2.RequestHandler):
+    POST_BLACKLIST = ['user_id', 'fiider_count', 'fiiding_count', 'post_count']
+    PUT_BLACKLIST = ['user_id', 'username', 'fiider_count', 'fiiding_count', 'post_count']
+
     def get(self):
         authenticated, this_user = utils.process_cookie(self.request)
         if not authenticated:
@@ -60,6 +63,12 @@ class User(webapp2.RequestHandler):
             self.response.status = 403
             return
 
+        if utils.fail_blacklist(self.POST_BLACKLIST, req_params):
+            error = 'Invalid data in body'
+            self.response.out.write(utils.generate_json(self.request, this_user, "POST", None, error))
+            self.response.status = 403
+            return
+
         url_obj = urlparse.urlparse(str(self.request.url))
         subdirs = str(url_obj.path).split('/')
         num_layers = len(subdirs)
@@ -88,6 +97,11 @@ class User(webapp2.RequestHandler):
         last_dir_string = str(subdirs[len(subdirs)-1])
 
         if num_layers == 2:
+            if utils.fail_blacklist(self.PUT_BLACKLIST, req_params):
+                error = 'Invalid data in body'
+                self.response.out.write(utils.generate_json(self.request, this_user, "PUT", None, error))
+                self.response.status = 403
+                return
             userHandler.put_user(self, this_user, req_params)
         elif num_layers == 4:
             try:
